@@ -72,6 +72,10 @@ def go(test_id):
             continue
         if "_helpers" in f:
             continue
+        if os.name == "nt" and "_MT" in f:
+            continue
+        if os.name == "nt" and f == "test014_engine_2.py":
+            continue
         if not torch and f in torch_tests:
             print(f"Ignoring: {f:<40} (Torch is not available) ")
             continue

@@ -43,7 +43,7 @@ void GateARFActor::SteppingAction(G4Step *step) {
   // trigger the "apply" if the number of batch is reached or when a run is
   // finished
   auto rid = G4RunManager::GetRunManager()->GetCurrentRun()->GetRunID();
-  if (fCurrentNumberOfHits >= fBatchSize or rid != fCurrentRunId) {
+  if (fCurrentNumberOfHits >= fBatchSize || rid != fCurrentRunId) {
     fApply(this);
     fEnergy.clear();
     fPositionX.clear();
