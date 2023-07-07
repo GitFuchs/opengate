@@ -239,9 +239,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
-    - uses: 8BitJonny/gh-get-current-pr@2.2.0
-      id: PR
     - name: Run tests
+      env:
+        PR_NUMBER: ${{ github.event.number }}
       run: |
           if [ ${{ matrix.python-version }} == "3.8" ]; then
             export PYTHONFOLDER="cp38-cp38"
@@ -274,7 +274,7 @@ jobs:
               path=`opengate_tests_utils -p libG4geometry`
               export LD_PRELOAD=${path}:${LD_PRELOAD}
           fi
-          if [ "${{ steps.PR.outputs.number }}" != "null" ]; then
+          if [ "${{ PR_NUMBER }}" == "" ]; then
               OutputTest=$(opengate_tests)
           else
               OutputTest=$(opengate_tests -r)
