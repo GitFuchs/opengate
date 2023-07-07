@@ -19,6 +19,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.option(
     "--random",
     "-r",
+    is_flag=True,
     default=False,
     help="Start the last 10 tests and 1/5 of the others randomly",
 )
