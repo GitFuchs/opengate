@@ -240,8 +240,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
     - name: Run tests
-      env:
-        PR_NUMBER: ${{ github.event.number }}
       run: |
           if [ ${{ matrix.python-version }} == "3.8" ]; then
             export PYTHONFOLDER="cp38-cp38"
@@ -286,3 +284,5 @@ jobs:
           else
               exit 0
           fi
+      env:
+        PR_NUMBER: ${{ github.event.number }}
