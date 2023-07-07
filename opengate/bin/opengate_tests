@@ -17,13 +17,13 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("--test_id", "-i", default="all", help="Start test from this number")
 @click.option(
-    "--random",
+    "--random_tests",
     "-r",
     is_flag=True,
     default=False,
     help="Start the last 10 tests and 1/5 of the others randomly",
 )
-def go(test_id, random):
+def go(test_id, random_tests):
     pathFile = pathlib.Path(__file__).parent.resolve()
     if "src" in os.listdir(pathFile):
         mypath = os.path.join(pathFile, "../tests/src")
@@ -96,7 +96,7 @@ def go(test_id, random):
             else:
                 print(f"Ignoring: {f:<40} (< {test_id}) ")
         files = files_new
-    elif random:
+    elif random_tests:
         files_new = files[-10:]
         prob = 0.3
         files = files_new + random.sample(files[:-10], int(prob * (len(files) - 10)))
