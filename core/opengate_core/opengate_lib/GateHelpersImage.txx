@@ -8,19 +8,30 @@
 #include "G4LogicalVolume.hh"
 #include "GateHelpersGeometry.h"
 
-template<class ImageType>
+template <class ImageType>
 void ImageAddValue(typename ImageType::Pointer image,
                    typename ImageType::IndexType index,
-                   typename ImageType::PixelType value) {
+                   typename ImageType::PixelType value)
+{
   auto v = image->GetPixel(index); // FIXME maybe 2 x FastComputeOffset can be spared ?
   image->SetPixel(index, v + value);
 }
 
-template<class ImageType>
+// template <class ImageType4D>
+// void ImageAddValue4D(typename ImageType4D::Pointer image,
+//                      typename ImageType4D::IndexType index,
+//                      typename ImageType4D::PixelType value)
+// {
+//   auto v = image->GetPixel(index); // FIXME maybe 2 x FastComputeOffset can be spared ?
+//   image->SetPixel(index, v + value);
+// }
+
+template <class ImageType>
 void AttachImageToVolume(typename ImageType::Pointer image,
                          std::string volumeName,
                          G4ThreeVector image_offset,
-                         G4RotationMatrix volume_rotation) {
+                         G4RotationMatrix volume_rotation)
+{
   // get image properties
   auto size = image->GetLargestPossibleRegion().GetSize();
   auto spacing = image->GetSpacing();
@@ -45,11 +56,41 @@ void AttachImageToVolume(typename ImageType::Pointer image,
   // set both (itk data structure)
   typename ImageType::PointType o;
   typename ImageType::DirectionType dir;
-  for (auto i = 0; i < 3; i++) {
-    o[i] = origin[i];
-    for (auto j = 0; j < 3; j++)
-      dir[i][j] = rot(i, j);
+
+  // 4D hack
+  int getDimensions = std::size(size);
+  if (getDimensions == 4)
+  {
+    std::vector<double> originVector(4, 0.);
+    // originVector[3] = 0;
+
+    for (auto i = 0; i < 3; i++)
+      originVector[i] = origin[i];
+
+    for (auto i = 0; i < 4; i++)
+    {
+      o[i] = originVector[i];
+      for (auto j = 0; j < 4; j++)
+        dir[i][j] = 0;
+    }
+    dir[3][3] = 1;
+
+    for (auto i = 0; i < 3; i++)
+    {
+      for (auto j = 0; j < 3; j++)
+        dir[i][j] = rot(i, j);
+    }
   }
+  else
+  {
+    for (auto i = 0; i < 3; i++)
+    {
+      o[i] = origin[i];
+      for (auto j = 0; j < 3; j++)
+        dir[i][j] = rot(i, j);
+    }
+  }
+
   image->SetOrigin(o);
   image->SetDirection(dir);
 }
