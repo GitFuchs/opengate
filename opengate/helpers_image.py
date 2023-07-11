@@ -19,6 +19,10 @@ def update_image_py_to_cpp(py_img, cpp_img, copy_data=False):
     # something that can be read by SetDirection !
     d = py_img.GetDirection().GetVnlMatrix().as_matrix()
     rotation = itk.GetArrayFromVnlMatrix(d)
+    # print("d ", d)
+    # print("rotation ", rotation)
+    # print("py_img ", py_img)
+    # print("cpp_img ", cpp_img)
     cpp_img.set_direction(rotation)
     if copy_data:
         arr = itk.array_view_from_image(py_img)
@@ -45,6 +49,81 @@ def create_3d_image(size, spacing, pixel_type="float", allocate=True, fill_value
     if allocate:
         img.Allocate()
         img.FillBuffer(fill_value)
+    return img
+
+
+# def create_4d_image(
+#     size, spacing, pixel_type="float", allocate=True, fill_value=0, FourthDimension=10
+# ):
+#     dim = 4
+#     pixel_type = itk.ctype(pixel_type)
+#     image_type = itk.Image[pixel_type, dim]
+#     img = image_type.New()
+#     region = itk.ImageRegion[dim]()
+#     size = np.append(np.array(size), FourthDimension)
+#     region.SetSize(size.tolist())
+#     region.SetIndex([0, 0, 0, 0])
+#     spacing = np.append(np.array(spacing), 1)
+#     img.SetRegions(region)
+#     img.SetSpacing(spacing)
+#     # (default origin and direction)
+#     if allocate:
+#         img.Allocate()
+#         img.FillBuffer(fill_value)
+#     return img
+
+
+def create_vector_image(
+    sizePassed,
+    spacing,
+    pixel_type="float",
+    allocate=True,
+    fill_value=0,
+    vector_dimension=10,
+):
+    image_dimension = 3
+    vector_dimension = 6
+    Pixel_type = itk.Vector[itk.ctype(pixel_type), vector_dimension]
+    # Pixel_type = itk.Vector[itk.ctype(pixel_type), 6]
+
+    image_type = itk.Image[Pixel_type, image_dimension]
+
+    img = image_type.New()
+
+    start = itk.Index[image_dimension]()
+    start[0] = 0
+    start[1] = 0
+    start[2] = 0
+
+    size = itk.Size[image_dimension]()
+    size[0] = int(sizePassed[0])
+    size[1] = int(sizePassed[1])
+    size[2] = int(sizePassed[2])
+
+    region = itk.ImageRegion[image_dimension]()
+    print(size)
+    region.SetSize(size)
+    region.SetIndex(start)
+    spacing = np.array(spacing)
+
+    img.SetRegions(region)
+    img.SetSpacing(spacing)
+
+    img.Allocate()
+
+    region = itk.ImageRegion[image_dimension]()
+    size = np.array(size)
+    region.SetSize(size.tolist())
+    region.SetIndex([0, 0, 0])
+    spacing = np.array(spacing)
+    img.SetRegions(region)
+    img.SetSpacing(spacing)
+    # (default origin and direction)
+    vectorValue = Pixel_type()
+    vectorValue = [fill_value] * vector_dimension
+    if allocate:
+        img.Allocate()
+        img.FillBuffer(vectorValue)
     return img
 
 
@@ -215,8 +294,27 @@ def attach_image_to_physical_volume(
     translation, rotation = gate.get_transform_world_to_local(phys_vol_name)
     # compute origin
     info = get_info_from_image(image)
+    # print("size ", info.size)
+    # print("spacing ", info.spacing)
+    # print("initial translation ", initial_translation)
+    # print("translation ", translation)
+    # print("rotation ", rotation)
+
+    # hack for 4D images
+    # if len(initial_translation) == 3 and len(info.size) == 4:
+    #     initial_translation.append(0)
     origin = -info.size * info.spacing / 2.0 + info.spacing / 2.0 + initial_translation
+
+    # if len(origin) == 4:
+    #     origin[3] = 0
+    #     origin = Rotation.from_matrix(rotation).apply(origin[0:3]) + translation
+    #     rotNew = np.identity(4)
+    #     rotNew[:3, :3] = rotation
+    #     rotation = rotNew
+    #     origin = np.append(origin, 0)
+    # else:
     origin = Rotation.from_matrix(rotation).apply(origin) + translation
+    # print("final origin ", origin)
     # set origin and direction
     image.SetOrigin(origin)
     image.SetDirection(rotation)
