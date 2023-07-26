@@ -10,6 +10,7 @@ from .DigitizerEnergyWindowsActor import *
 from .DigitizerProjectionActor import *
 from .DigitizerBlurringActor import *
 from .DigitizerSpatialBlurringActor import *
+from .DigitizerEfficiencyActor import *
 from .MotionVolumeActor import *
 from .PhaseSpaceActor import *
 from .SimulationStatisticsActor import *
@@ -30,6 +31,7 @@ actor_type_names = {
     DigitizerReadoutActor,
     DigitizerBlurringActor,
     DigitizerSpatialBlurringActor,
+    DigitizerEfficiencyActor,
     MotionVolumeActor,
     ARFActor,
     ARFTrainingDatasetActor,
