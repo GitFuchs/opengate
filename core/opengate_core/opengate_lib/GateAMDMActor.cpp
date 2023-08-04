@@ -9,24 +9,21 @@
 #include "G4Navigator.hh"
 #include "G4RandomTools.hh"
 #include "G4RunManager.hh"
+#include "GateAMDMActor_lookUpTable.hh"
 #include "GateHelpers.h"
 #include "GateHelpersDict.h"
 #include "GateHelpersImage.h"
-#include "GateAMDMActor_lookUpTable.hh"
-#include <string>
-#include "itkImageFileWriter.h"
 #include "itkDivideImageFilter.h"
 #include "itkExtractImageFilter.h"
+#include "itkImageFileWriter.h"
 #include "itkPasteImageFilter.h"
+#include <string>
 
 // Mutex that will be used by thread to write in the edep/dose image
 G4Mutex SetPixelMutexAMDM = G4MUTEX_INITIALIZER;
 
 GateAMDMActor::GateAMDMActor(py::dict &user_info)
-    : GateVActor(user_info, true)
-{
-  std::cout << "AMDM actor creating"
-            << std::endl;
+    : GateVActor(user_info, true) {
   // Create the image pointer
   // (the size and allocation will be performed on the py side)
   // cpp_amdm_delta_image = VectorImageType::New();
@@ -57,7 +54,8 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   spacing[2] = fImageSpacing[2]; // spacing along Z
   spacing[3] = 1;                // spacing along T
   // std::cout
-  //     << "AMDM image size: " << size[0] << " " << size[1] << " " << size[2] << " " << size[3] << std::endl;
+  //     << "AMDM image size: " << size[0] << " " << size[1] << " " << size[2]
+  //     << " " << size[3] << std::endl;
 
   ImageType4D::RegionType region;
   region.SetSize(size);
@@ -91,9 +89,9 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
 
   // // intialize and read in look up tables
   fLUTfilename = DictGetStr(user_info, "LUTfilename");
-  if (fLUTfilename.empty())
-  {
-    std::cout << "The file name for the AMDM LUT is empty. Aborting." << std::endl;
+  if (fLUTfilename.empty()) {
+    std::cout << "The file name for the AMDM LUT is empty. Aborting."
+              << std::endl;
     exit(-1);
   }
 
@@ -102,43 +100,42 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   famdm_tables->readLookUpTable(fLUTfilename);
   // famdm_tables->printLookUpTable();
 
-  std::cout
-      << "AMDM actor created"
-      << std::endl;
+  std::cout << "AMDM actor created" << std::endl;
 }
 
-void GateAMDMActor::ActorInitialize(py::dict &user_info)
-{
+void GateAMDMActor::ActorInitialize(py::dict &user_info) {
   // // intialize and read in look up tables
   fLUTfilename = DictGetStr(user_info, "LUTfilename");
-  if (fLUTfilename.empty())
-  {
-    std::cout << "The file name for the AMDM LUT is empty. Aborting." << std::endl;
+  if (fLUTfilename.empty()) {
+    std::cout << "The file name for the AMDM LUT is empty. Aborting."
+              << std::endl;
     exit(-1);
   }
 
   lookUpTable *famdm_tables = new lookUpTable();
   famdm_tables->readLookUpTable(fLUTfilename);
   famdm_tables->printLookUpTable();
-  std::cout << "AMDM actor initialized"
-            << std::endl;
+  std::cout << "AMDM actor initialized" << std::endl;
 }
 
-void GateAMDMActor::BeginOfRunAction(const G4Run *)
-{
+void GateAMDMActor::BeginOfRunAction(const G4Run *) {
   // Important ! The volume may have moved, so we re-attach each run
   AttachImageToVolume<ImageType4D>(cpp_amdm_delta_image, fPhysicalVolumeName,
                                    fInitialTranslation);
   AttachImageToVolume<ImageType4D>(cpp_amdm_gamma_image, fPhysicalVolumeName,
                                    fInitialTranslation);
-  //   AttachImageToVolume<  AttachImageToVolume<ImageType4D>(cpp_amdm_restricted_edep_image, fPhysicalVolumeName,
+  //   AttachImageToVolume<
+  //   AttachImageToVolume<ImageType4D>(cpp_amdm_restricted_edep_image,
+  //   fPhysicalVolumeName,
   // >(cpp_amdm_delta_image, fPhysicalVolumeName,
   //                                        fInitialTranslation);
-  //   AttachImageToVolume<  AttachImageToVolume<ImageType4D>(cpp_amdm_restricted_edep_image, fPhysicalVolumeName,
+  //   AttachImageToVolume<
+  //   AttachImageToVolume<ImageType4D>(cpp_amdm_restricted_edep_image,
+  //   fPhysicalVolumeName,
   // >(cpp_amdm_gamma_image, fPhysicalVolumeName,
   //                                        fInitialTranslation);
-  AttachImageToVolume<ImageType>(cpp_amdm_restricted_edep_image, fPhysicalVolumeName,
-                                 fInitialTranslation);
+  AttachImageToVolume<ImageType>(cpp_amdm_restricted_edep_image,
+                                 fPhysicalVolumeName, fInitialTranslation);
 
   // // compute volume of a dose voxel
   // auto sp = cpp_amdm_image->GetSpacing();
@@ -147,8 +144,7 @@ void GateAMDMActor::BeginOfRunAction(const G4Run *)
   //           << std::endl;
 }
 
-void GateAMDMActor::SteppingAction(G4Step *step)
-{
+void GateAMDMActor::SteppingAction(G4Step *step) {
   // std::cout << "a step"
   //           << std::endl;
   auto preGlobal = step->GetPreStepPoint()->GetPosition();
@@ -159,27 +155,18 @@ void GateAMDMActor::SteppingAction(G4Step *step)
 
   // consider random position between pre and post
   auto position = postGlobal;
-  if (fHitType == "pre")
-  {
+  if (fHitType == "pre") {
     position = preGlobal;
-  }
-  else if (fHitType == "random")
-  {
+  } else if (fHitType == "random") {
     auto x = G4UniformRand();
     auto direction = postGlobal - preGlobal;
     position = preGlobal + x * direction;
-  }
-  else if (fHitType == "middle")
-  {
+  } else if (fHitType == "middle") {
     auto direction = postGlobal - preGlobal;
     position = preGlobal + 0.5 * direction;
-  }
-  else if (fHitType == "post")
-  {
+  } else if (fHitType == "post") {
     position = postGlobal;
-  }
-  else
-  {
+  } else {
     std::cout << "Unknown hit type " << fHitType << " Aborting." << std::endl;
     exit(-1);
   }
@@ -201,48 +188,52 @@ void GateAMDMActor::SteppingAction(G4Step *step)
   // get pixel index
   ImageType::IndexType index;
   // ImageType4D::IndexType index4D;
-  bool isInside = cpp_amdm_restricted_edep_image->TransformPhysicalPointToIndex(point, index);
+  bool isInside = cpp_amdm_restricted_edep_image->TransformPhysicalPointToIndex(
+      point, index);
 
   // set value
-  if (isInside)
-  {
+  if (isInside) {
     // With mutex (thread)
     G4AutoLock mutex(&SetPixelMutexAMDM);
 
     G4int charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
     G4int atomic_mass = step->GetTrack()->GetDefinition()->GetBaryonNumber();
 
-    // skip if charge is smaller or equal to zero, as outside of applicability of MCF MKM model
+    // skip if charge is smaller or equal to zero, as outside of applicability
+    // of MCF MKM model
     if (charge <= 0)
       return;
 
     // double cut = DBL_MAX;
     // important add units !
-    // G4double density = step->GetTrack()->GetMaterial()->GetDensity() / (CLHEP::g / CLHEP::cm3);
+    // G4double density = step->GetTrack()->GetMaterial()->GetDensity() /
+    // (CLHEP::g / CLHEP::cm3);
     G4double kinEnergy = step->GetTrack()->GetKineticEnergy() / (CLHEP::MeV);
     // if nan, that is if atomic mass is zero
-    if (isnan(kinEnergy / atomic_mass))
-    {
-      // std::cout << "kinetic Energy: " << kinEnergy << " atomic mass: " << atomic_mass << std::endl;
+    if (isnan(kinEnergy / atomic_mass)) {
+      // std::cout << "kinetic Energy: " << kinEnergy << " atomic mass: " <<
+      // atomic_mass << std::endl;
       return;
     }
-    // std::cout << "edep: " << edep << "kinetic Energy: " << kinEnergy << " atomic mass: " << atomic_mass << std::endl;
+    // std::cout << "edep: " << edep << "kinetic Energy: " << kinEnergy << "
+    // atomic mass: " << atomic_mass << std::endl;
 
     bool success = false;
     std::vector<double> entry;
     // famdm_tables->printLookUpTable();
     // std::cout << "starting lookup" << std::endl;
-    success = famdm_tables->findEntriesByEnergy(charge, kinEnergy / atomic_mass, entry);
-    // first kMaxAMDMBins entries for gamma, second kMaxAMDMBins entries for delta
-    // std::cout << "entry size: " << entry.size() << std::endl;
-    // std::cout << "entry 0: " << entry[0] << std::endl;
-    // std::cout << "success is not yet there" << std::endl;
-    if (success)
-    {
+    success = famdm_tables->findEntriesByEnergy(charge, kinEnergy / atomic_mass,
+                                                entry);
+    // first kMaxAMDMBins entries for gamma, second kMaxAMDMBins entries for
+    // delta std::cout << "entry size: " << entry.size() << std::endl; std::cout
+    // << "entry 0: " << entry[0] << std::endl; std::cout << "success is not yet
+    // there" << std::endl;
+    if (success) {
       // std::cout << "success is true" << std::endl;
       // store restricted edep
       ImageAddValue<ImageType>(cpp_amdm_restricted_edep_image, index, edep);
-      // std::cout << "added edep to edep image with index: " << index << std::endl;
+      // std::cout << "added edep to edep image with index: " << index <<
+      // std::endl;
 
       G4double gamma_d = 0;
       G4double delta_e = 0;
@@ -263,12 +254,17 @@ void GateAMDMActor::SteppingAction(G4Step *step)
       ImageType4D::PointType point4D;
       ImageType4D::IndexType index4D;
 
-      // std::cout << "Dimension of cpp_amdm_delta_image " << cpp_amdm_delta_image->GetLargestPossibleRegion().GetSize() << std::endl;
-      // std::cout << "Dimension of cpp_amdm_gamma_image " << cpp_amdm_gamma_image->GetLargestPossibleRegion().GetSize() << std::endl;
-      // std::cout << "Origin of cpp_amdm_delta_image" << cpp_amdm_delta_image->GetOrigin() << std::endl;
-      // std::cout << "Origin of cpp_amdm_gamma_image" << cpp_amdm_gamma_image->GetOrigin() << std::endl;
-      // std::cout << "Spacing of cpp_amdm_delta_image" << cpp_amdm_delta_image->GetSpacing() << std::endl;
-      // std::cout << "Spacing of cpp_amdm_gamma_image" << cpp_amdm_gamma_image->GetSpacing() << std::endl;
+      // std::cout << "Dimension of cpp_amdm_delta_image " <<
+      // cpp_amdm_delta_image->GetLargestPossibleRegion().GetSize() <<
+      // std::endl; std::cout << "Dimension of cpp_amdm_gamma_image " <<
+      // cpp_amdm_gamma_image->GetLargestPossibleRegion().GetSize() <<
+      // std::endl; std::cout << "Origin of cpp_amdm_delta_image" <<
+      // cpp_amdm_delta_image->GetOrigin() << std::endl; std::cout << "Origin of
+      // cpp_amdm_gamma_image" << cpp_amdm_gamma_image->GetOrigin() <<
+      // std::endl; std::cout << "Spacing of cpp_amdm_delta_image" <<
+      // cpp_amdm_delta_image->GetSpacing() << std::endl; std::cout << "Spacing
+      // of cpp_amdm_gamma_image" << cpp_amdm_gamma_image->GetSpacing() <<
+      // std::endl;
 
       point4D[0] = localPosition[0];
       point4D[1] = localPosition[1];
@@ -282,8 +278,7 @@ void GateAMDMActor::SteppingAction(G4Step *step)
       // for every bin, we have two LUT entries going from 0 to 9=kMaxMCFBins-1
       // LUT entries going from 0 to 9=kMaxMCFBins-1
       // we loop through all bins and create the pixel value for each bin
-      for (int i = 0; i < kMaxAMDMBins; i++)
-      {
+      for (int i = 0; i < kMaxAMDMBins; i++) {
         index4D[3] = i;
         // std::cout << "point4D: " << point4D << std::endl;
         // std::cout << "index4D: " << index4D << std::endl;
@@ -297,45 +292,35 @@ void GateAMDMActor::SteppingAction(G4Step *step)
         // store gamma_d and delta_e
         ImageAddValue<ImageType4D>(cpp_amdm_delta_image, index4D, delta_e);
         ImageAddValue<ImageType4D>(cpp_amdm_gamma_image, index4D, gamma_d);
-
-        // BinnedPixel_delta_e[i] = delta_e;
-        // BinnedPixel_gamma_d[i] = gamma_d;
-
-        // std::cout << " charge : " << charge << " kin energy " << kinEnergy
-        //           << " gamma LUT: " << entry[i] << " delta LUT: " << entry[i + secondHalf]
-        //           << " edep: " << edep << " gamma_d : " << gamma_d << " delta_e : " << delta_e << std::endl;
-        // // std::cout << " i: " << i << " entry[i] " << entry[i] << " bin j :" << j << " gamma_d hist: " << j << " delta_d hist: " << j + secondHalf << std::endl;
-        // std::cout << " i " << i << " edep: " << edep << " gamma_d : " << gamma_d << " delta_e : " << delta_e << std::endl;
       }
-      // // ############## filling
-      // ImageAddValue<VectorImageType>(cpp_amdm_delta_image, index, BinnedPixel_delta_e);
-      // ImageAddValue<VectorImageType>(cpp_amdm_gamma_image, index, BinnedPixel_gamma_d);
     }
-    else
-    {
-      std::cout << "INFO: no data found in LUT for particle: charge: " << charge
-                << " kin energy: " << kinEnergy << " Skipping." << std::endl;
-    }
+    // else
+    // {
+    //   std::cout << "INFO: no data found in LUT for particle: charge: " <<
+    //   charge
+    //             << " kin energy: " << kinEnergy << " Skipping." << std::endl;
+    // }
   }
 }
 
 // Called every time a Run ends
-void GateAMDMActor::EndOfRunAction(const G4Run * /*unused*/)
-{
+void GateAMDMActor::EndOfRunAction(const G4Run * /*unused*/) {
 
   // std::cout << "end of run action"
   //           << std::endl;
   // moved to end of simulation to avoid multiple threads
 }
 
-GateAMDMActor::ImageType4D::Pointer GateAMDMActor::divide4dby3dImage(ImageType4D::Pointer imageToProcess, ImageType::Pointer denominatorImage)
-{
+GateAMDMActor::ImageType4D::Pointer
+GateAMDMActor::divide4dby3dImage(ImageType4D::Pointer imageToProcess,
+                                 ImageType::Pointer denominatorImage) {
   ImageType4D::IndexType pixelIndex;
   pixelIndex[0] = 0; // x position of the pixel
   pixelIndex[1] = 0; // y position of the pixel
   pixelIndex[2] = 0; // z position of the pixel
   pixelIndex[3] = 0; // bin position of the pixel
-  // std::cout << "in function before division: " << imageToProcess->GetPixel(pixelIndex) << std::endl;
+  // std::cout << "in function before division: " <<
+  // imageToProcess->GetPixel(pixelIndex) << std::endl;
 
   // define the extract filter
   using ExtractFilterType = itk::ExtractImageFilter<ImageType4D, ImageType>;
@@ -351,16 +336,17 @@ GateAMDMActor::ImageType4D::Pointer GateAMDMActor::divide4dby3dImage(ImageType4D
   // std::cout << "imageToProcess size: " << size << std::endl;
   int bins = size[3];
 
-  for (int i = 0; i < bins; i++)
-  {
+  for (int i = 0; i < bins; i++) {
     // ImageType::IndexType pixelIndex3D;
     // pixelIndex3D[0] = 0; // x position of the pixel
     // pixelIndex3D[1] = 0; // y position of the pixel
     // pixelIndex3D[2] = 0; // z position of the pixel
 
-    // std::cout << "in function loop before division: " << imageToProcess->GetPixel(pixelIndex) << std::endl;
-    // std::cout << "in function loop to divide with: " << denominatorImage->GetPixel(pixelIndex3D) << std::endl;
-    // pixelIndex[3] = i; // bin position of the pixel for debugging output
+    // std::cout << "in function loop before division: " <<
+    // imageToProcess->GetPixel(pixelIndex) << std::endl; std::cout << "in
+    // function loop to divide with: " <<
+    // denominatorImage->GetPixel(pixelIndex3D) << std::endl; pixelIndex[3] = i;
+    // // bin position of the pixel for debugging output
 
     // std::cout << "i: " << i << std::endl;
     // process bin number i
@@ -377,22 +363,26 @@ GateAMDMActor::ImageType4D::Pointer GateAMDMActor::divide4dby3dImage(ImageType4D
     extractFilter->SetExtractionRegion(desiredRegion);
     extractFilter->SetDirectionCollapseToSubmatrix();
     extractFilter->SetInput(imageToProcess);
-    // std::cout << "in function loop 3D before division: " << extractFilter->GetOutput()->GetPixel(pixelIndex3D) << std::endl;
+    // std::cout << "in function loop 3D before division: " <<
+    // extractFilter->GetOutput()->GetPixel(pixelIndex3D) << std::endl;
 
-    // the paste filter puts the extracted/processed slice back into its original place
+    // the paste filter puts the extracted/processed slice back into its
+    // original place
     using PasteFilterType = itk::PasteImageFilter<ImageType4D, ImageType>;
     auto pasteFilter = PasteFilterType::New();
     // pasteFilter->SetInPlace(false);
     // std::cout << "can in place " << pasteFilter->GetInPlace() << std::endl;
 
     // one 3d image is extracted and processed at a time
-    using DivideImageFilterType = itk::DivideImageFilter<ImageType, ImageType, ImageType>;
+    using DivideImageFilterType =
+        itk::DivideImageFilter<ImageType, ImageType, ImageType>;
     auto divideImageFilter = DivideImageFilterType::New();
     divideImageFilter->SetInput1(extractFilter->GetOutput());
     divideImageFilter->SetInput2(denominatorImage);
     divideImageFilter->Update();
     ImageType::Pointer divisionImage = divideImageFilter->GetOutput();
-    // std::cout << "after division " << divisionImage->GetPixel(pixelIndex3D) << std::endl;
+    // std::cout << "after division " << divisionImage->GetPixel(pixelIndex3D)
+    // << std::endl;
 
     pasteFilter->SetSourceImage(divisionImage);
     pasteFilter->SetSourceRegion(divisionImage->GetLargestPossibleRegion());
@@ -404,34 +394,38 @@ GateAMDMActor::ImageType4D::Pointer GateAMDMActor::divide4dby3dImage(ImageType4D
 
     imageToProcess = pasteFilter->GetOutput();
   }
-  // std::cout << "at end of division function data at voxel: " << imageToProcess->GetPixel(pixelIndex) << std::endl;
+  // std::cout << "at end of division function data at voxel: " <<
+  // imageToProcess->GetPixel(pixelIndex) << std::endl;
 
   return imageToProcess;
 }
 
-GateAMDMActor::ImageType4D::Pointer GateAMDMActor::divide4dImage(ImageType4D::Pointer imageToProcess, ImageType4D::Pointer denominatorImage)
-{
+GateAMDMActor::ImageType4D::Pointer
+GateAMDMActor::divide4dImage(ImageType4D::Pointer imageToProcess,
+                             ImageType4D::Pointer denominatorImage) {
   // ImageType4D::IndexType pixelIndex;
   // pixelIndex[0] = 0; // x position of the pixel
   // pixelIndex[1] = 0; // y position of the pixel
   // pixelIndex[2] = 0; // z position of the pixel
   // pixelIndex[3] = 0; // bin position of the pixel
-  // std::cout << "in function before division: " << imageToProcess->GetPixel(pixelIndex) << std::endl;
+  // std::cout << "in function before division: " <<
+  // imageToProcess->GetPixel(pixelIndex) << std::endl;
 
   // one 4d image is divided by the other
-  using DivideImageFilterType = itk::DivideImageFilter<ImageType4D, ImageType4D, ImageType4D>;
+  using DivideImageFilterType =
+      itk::DivideImageFilter<ImageType4D, ImageType4D, ImageType4D>;
   auto divideImageFilter = DivideImageFilterType::New();
   divideImageFilter->SetInput1(imageToProcess);
   divideImageFilter->SetInput2(denominatorImage);
   divideImageFilter->Update();
 
   imageToProcess = divideImageFilter->GetOutput();
-  // std::cout << "in function after division: " << imageToProcess->GetPixel(pixelIndex) << std::endl;
+  // std::cout << "in function after division: " <<
+  // imageToProcess->GetPixel(pixelIndex) << std::endl;
   return imageToProcess;
 }
 
-void GateAMDMActor::EndSimulationAction()
-{
+void GateAMDMActor::EndSimulationAction() {
   // std::cout << "end of simulation action"
   //           << std::endl;
 
@@ -445,15 +439,21 @@ void GateAMDMActor::EndSimulationAction()
   pixelIndex[2] = 0; // z position of the pixel
   pixelIndex[3] = 0; // bin position of the pixel
 
-  // std::cout << "gamma before division: " << cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
-  cpp_amdm_gamma_image = GateAMDMActor::divide4dImage(cpp_amdm_gamma_image, cpp_amdm_delta_image);
-  // std::cout << "gamma after division: " << cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
+  // std::cout << "gamma before division: " <<
+  // cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
+  cpp_amdm_gamma_image =
+      GateAMDMActor::divide4dImage(cpp_amdm_gamma_image, cpp_amdm_delta_image);
+  // std::cout << "gamma after division: " <<
+  // cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
 
   // divide delta by restricted edep
-  // std::cout << "delta before division: " << cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl;
-  cpp_amdm_delta_image = GateAMDMActor::divide4dby3dImage(cpp_amdm_delta_image, cpp_amdm_restricted_edep_image);
-  // std::cout << "delta after division: " << cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl;
-  // write images to file
+  // std::cout << "delta before division: " <<
+  // cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl;
+  cpp_amdm_delta_image = GateAMDMActor::divide4dby3dImage(
+      cpp_amdm_delta_image, cpp_amdm_restricted_edep_image);
+  // std::cout << "delta after division: " <<
+  // cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl; write images to
+  // file
 
   std::string outputFileName;
   // typedef itk::Image<float, 4> ImageType4D;
@@ -467,12 +467,9 @@ void GateAMDMActor::EndSimulationAction()
 
   writer->SetFileName(outputFileName);
   writer->SetInput(cpp_amdm_delta_image);
-  try
-  {
+  try {
     writer->Update();
-  }
-  catch (const itk::ExceptionObject &error)
-  {
+  } catch (const itk::ExceptionObject &error) {
     std::cerr << "Error: " << error << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -480,19 +477,15 @@ void GateAMDMActor::EndSimulationAction()
   outputFileName = sOutputFileNameBase + "_gamma.mhd";
   writer->SetFileName(outputFileName);
   writer->SetInput(cpp_amdm_gamma_image);
-  try
-  {
+  try {
     writer->Update();
-  }
-  catch (const itk::ExceptionObject &error)
-  {
+  } catch (const itk::ExceptionObject &error) {
     std::cerr << "Error: " << error << std::endl;
     exit(EXIT_FAILURE);
   }
 }
 
-std::string GateAMDMActor::remove_extension(const std::string &filename)
-{
+std::string GateAMDMActor::remove_extension(const std::string &filename) {
   size_t lastdot = filename.find_last_of(".");
   if (lastdot == std::string::npos)
     return filename;
