@@ -227,6 +227,6 @@ class AMDMActor(g4.GateAMDMActor, gate.ActorBase):
 
         # edep image
         n = gate.check_filename_type(self.user_info.output).replace(
-            ".mhd", "_restricedEdep.mhd"
+            ".mhd", "_restrictedEdep.mhd"
         )
         itk.imwrite(self.py_restricted_edep_image, n)
