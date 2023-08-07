@@ -107,7 +107,6 @@ class AMDMActor(g4.GateAMDMActor, gate.ActorBase):
         self.first_run = True
 
     def StartSimulationAction(self):
-        print("StartSimulationAction")
         # init the origin and direction according to the physical volume
         # (will be updated in the BeginOfRun)
         try:
@@ -186,7 +185,6 @@ class AMDMActor(g4.GateAMDMActor, gate.ActorBase):
                     f'volume ("{vol_name}", of type "{vol_type}"). '
                     f"So the flag is ignored."
                 )
-        print("middle of StartSimulationAction")
         # user can set the output origin
         if self.user_info.output_origin is not None:
             if self.user_info.img_coord_system:
@@ -196,8 +194,6 @@ class AMDMActor(g4.GateAMDMActor, gate.ActorBase):
                     f"but output_origin is set, so img_coord_system ignored."
                 )
             self.output_origin = self.user_info.output_origin
-
-        print("End of StartSimulationAction")
 
     def EndSimulationAction(self):
         g4.GateAMDMActor.EndSimulationAction(self)

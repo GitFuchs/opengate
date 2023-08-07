@@ -115,7 +115,7 @@ void GateAMDMActor::ActorInitialize(py::dict &user_info) {
   lookUpTable *famdm_tables = new lookUpTable();
   famdm_tables->readLookUpTable(fLUTfilename);
   famdm_tables->printLookUpTable();
-  std::cout << "AMDM actor initialized" << std::endl;
+  // std::cout << "AMDM actor initialized" << std::endl;
 }
 
 void GateAMDMActor::BeginOfRunAction(const G4Run *) {
