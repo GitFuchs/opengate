@@ -462,7 +462,7 @@ void GateAMDMActor::EndSimulationAction() {
 
   auto writer = WriterType::New();
 
-  outputFileName = sOutputFileNameBase + "_delta.mhd";
+  outputFileName = sOutputFileNameBase + "-delta.mhd";
   // std::cout << "outputFileName: " << outputFileName << std::endl;
 
   writer->SetFileName(outputFileName);
@@ -474,7 +474,7 @@ void GateAMDMActor::EndSimulationAction() {
     exit(EXIT_FAILURE);
   }
 
-  outputFileName = sOutputFileNameBase + "_gamma.mhd";
+  outputFileName = sOutputFileNameBase + "-gamma.mhd";
   writer->SetFileName(outputFileName);
   writer->SetInput(cpp_amdm_gamma_image);
   try {
