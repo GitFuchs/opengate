@@ -5,18 +5,17 @@
    See LICENSE.md for further details
    ------------------------------------ -------------- */
 
-#include "GateDoseActor.h"
-#include "G4MTRunManager.hh"
 #include "G4Navigator.hh"
 #include "G4RandomTools.hh"
 #include "G4RunManager.hh"
 #include "G4Threading.hh"
-#include "G4ios.hh"
-#include "GateHelpers.h"
+
+#include "GateDoseActor.h"
 #include "GateHelpersDict.h"
 #include "GateHelpersImage.h"
-#include "itkAddImageFilter.h"
+
 #include <iostream>
+#include <itkAddImageFilter.h>
 #include <itkImageRegionIterator.h>
 
 // Mutex that will be used by thread to write in the edep/dose image
@@ -35,6 +34,8 @@ GateDoseActor::GateDoseActor(py::dict &user_info)
   fActions.insert("EndSimulationAction");
   // Option: compute uncertainty
   fUncertaintyFlag = DictGetBool(user_info, "uncertainty");
+  // Option: compute square
+  fSquareFlag = DictGetBool(user_info, "square");
   // Option: compute dose in Gray
   fGrayFlag = DictGetBool(user_info, "gray");
   // translation
@@ -44,7 +45,7 @@ GateDoseActor::GateDoseActor(py::dict &user_info)
 }
 
 void GateDoseActor::ActorInitialize() {
-  if (fUncertaintyFlag) {
+  if (fUncertaintyFlag || fSquareFlag) {
     NbOfThreads = G4Threading::GetNumberOfRunningWorkerThreads();
     if (NbOfThreads == 0) {
       NbOfThreads = 1;
@@ -62,7 +63,7 @@ void GateDoseActor::BeginOfRunAction(const G4Run *) {
 
   Image3DType::RegionType region = cpp_edep_image->GetLargestPossibleRegion();
   size_edep = region.GetSize();
-  if (fUncertaintyFlag) {
+  if (fUncertaintyFlag || fSquareFlag) {
     size_4D[0] = size_edep[0];
     size_4D[1] = size_edep[1];
     size_4D[2] = size_edep[2];
@@ -132,7 +133,7 @@ void GateDoseActor::SteppingAction(G4Step *step) {
     // std::cout<<"lol"<<std::endl;
 
     // If uncertainty: consider edep per event
-    if (fUncertaintyFlag) {
+    if (fUncertaintyFlag || fSquareFlag) {
       auto event_id =
           G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
       Threadindex[0] = index[0];
@@ -171,7 +172,7 @@ void GateDoseActor::SteppingAction(G4Step *step) {
 
 void GateDoseActor::EndSimulationAction() {
 
-  if (fUncertaintyFlag) {
+  if (fUncertaintyFlag || fSquareFlag) {
 
     // Take the square of the 4D temp image
     itk::ImageRegionIterator<Image4DType> iterator_temp(
