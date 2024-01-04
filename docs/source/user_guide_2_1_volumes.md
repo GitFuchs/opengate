@@ -201,6 +201,26 @@ The first method, described in this section, is controlled via the `repeat` para
 - 'name'
 - 'translation'
 - 'rotation'
+The function `HounsfieldUnit_to_material` returns two objects:
+1) A list of intervals and material names which can be used as parameter `voxel_materials`
+2) A list of materials for other use
+
+The input parameters of the function `HounsfieldUnit_to_material` are
+1) An existing simulation (here `sim`)
+2) The density tolerance (in g/cm3)
+3) The path to a file containing a list of reference *materials*
+4) The path to a file containing a list of reference *densities*
+
+Examples of such files can be found in the `opengate/tests/data` folder. See test `test009` as example.
+
+### Repeated volumes
+
+The first method, described in this section, is controlled via the `translation` and `rotation` parameters. To instruct Geant4 to repeat a volume in multiple locations, it is sufficient to provide a list of translation vectors to the volume parameter `translation`. Gate will make sure that a G4PhysicalVolume is created for each entry. Consequently, the length of the list of translations determines the number of copies. If only a single rotation matrix is provided as volume parameter `rotation`, this will be used for all copies. If each copies requires a separate individual rotation, e.g. when repeating volume around a circle, then the volume parameter `rotation` should receive a list of rotation matrices. Obviously, the number of rotations and translation should match.
+
+Each volume copy corresponds to a G4PhysicalVolume in Geant4 with its own unique name. Gate automatically generates this name. It can be obtained from a given copy index (counting starts at 0) via the method `get_repetition_name_from_index()`. Or vice versa, the copy index can be obtained from the copy name via `get_repetition_index_from_name()`.
+
+Gate comes with utility functions to generate translation and rotation parameters for common types of volume repetitions - see below.
+
 
 ```python
 import opengate as gate
@@ -211,19 +231,19 @@ crystal = sim.add_volume("Box", "crystal")
 crystal.size = [1 * cm, 1 * cm, 1 * cm]
 crystal.material = "LYSO"
 m = Rotation.identity().as_matrix()
-crystal.repeat = [
-    {"name": "crystal1", "translation": [1 * cm, 0 * cm, 0], "rotation": m},
-    {"name": "crystal2", "translation": [0.2 * cm, 2 * cm, 0], "rotation": m},
-    {"name": "crystal3", "translation": [-0.2 * cm, 4 * cm, 0], "rotation": m},
-    {"name": "crystal4", "translation": [0, 6 * cm, 0], "rotation": m},
-]
+crystal.translation = [[1 * cm, 0 * cm, 0],
+                       [0.2 * cm, 2 * cm, 0],
+                       [-0.2 * cm, 4 * cm, 0]]
+print(f"The crystal is repeated in {crystal.number_of_repetitions} locations. ")
+print(f"Specified by the following translation vectors: ")
+for i, t in enumrate(crystal.translation):
+    print(f"Repetition {crystal.get_repetition_name_from_index(i)}: {t}. ")
 ```
 
-In this example, the volume named `crystal`, with the shape of a box, a size of 1x1x1 cm<sup>3</sup>, and made of LYSO, is repeated in 4 positions. The list assigned to `crystal.repeat` describes for each of the 4 copies, the name of the copy, the translation and the rotation. In this example, only the translation is modified, the rotation is set to the same (identity) matrix. Any mathematically valid rotation matrix can be given to each copy.
-
-Note that the parameters `crystal.translation` and `crystal.rotation` of the repeated volume are ignored and only the translation and rotation provided in the repeat dictionaries are considered.
+In this example, the volume named `crystal`, with the shape of a box, a size of 1x1x1 cm<sup>3</sup>, and made of LYSO, is repeated in 3 positions. In this example, only the translation is modified, the rotation is set to the same default identity matrix.
 
 There are utility functions that help you to generate lists of repeat dictionaries. For example:
+There are utility functions that help you to generate lists of translations and rotations. For example:
 
 ```python
 import opengate as gate
@@ -252,6 +272,34 @@ The `repeat_ring` helper function returns a list of dictionaries that can be use
 You are obviously free to generate your own list of repeat dictionaries to suit your needs and they do not need to be regularly spaced and/or follow any spatial pattern such as a grid or ring. Just remember that Geant4 does not allow volumes to overlap and make sure that repetitions to not geometrically interfere with each other.
 
 Volume repetitions controlled via the `repeat` parameter are a convenient and generic way to construct a "not too large" number of repeated objects. In case of "many" repetitions, the Geant4 tracking engine can become slow. In that case, it is better to use parameterised volumes described in the next section. It is not easy to quantify "not too many" repetitions. Based on our experience, a few hundred is still acceptable, but you might want to check in your case. Note that, if the volume contains sub-volumes (via their `mother` parameter, everything will be repeated, albeit in an optimized and efficient way.
+
+
+### Repeat Parametrised Volumes
+import opengate as gate
+mm = gate.g4_units.mm
+crystal = sim.add_volume("Box", "crystal")
+translations_grid = gate.geometry.utility.get_grid_repetition(size=[1, 4, 5], spacing=[0, 32.85 * mm, 32.85 * mm])
+crystal.translation = translations_grid
+# or
+detector = sim.add_volume("Box", "detector")
+translations_circle, rotations_circle = gate.geometry.utility.get_circular_repetition(number_of_repetitions=18, first_translation=[391.5 * mm, 0, 0], axis=[0, 0, 1])
+detector.translation = translations_circle
+detector.rotation = rotations_circle
+```
+
+To get help about the utility functions, do:
+
+```python
+import opengate as gate
+help(gate.geometry.utility.get_grid_repetition)
+help(gate.geometry.utility.get_circular_repetition)
+```
+
+You can also have a look at the `philipsvereos.py` and `siemensbiograph.py` examples in the `opengate/contrib/pet/` folder.
+
+You are obviously free to generate your own list of translations and rotations to suit your needs and they do not need to be regularly spaced and/or follow any spatial pattern such as a grid or ring. Just remember that Geant4 does not allow volumes to overlap and make sure that repetitions to not geometrically interfere (overlap) with each other.
+
+Volume repetitions controlled via the `translation` and `rotation` parameter are a convenient and generic way to construct a "not too large" number of repeated objects. In case of "many" repetitions, the Geant4 tracking engine can become slow. In that case, it is better to use parameterised volumes described in the next section. It is not easy to quantify "not too many" repetitions. Based on our experience, a few hundred is still acceptable, but you might want to check in your case. Note that, if the volume contains sub-volumes (via their `mother` parameter, everything will be repeated, albeit in an optimized and efficient way.
 
 
 ### Repeat Parametrised Volumes

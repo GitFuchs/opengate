@@ -1,8 +1,12 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 import opengate as gate
-from .TreatmentPlanSource import *
+
+from opengate.contrib.tps.ionbeamtherapy import *
+
 import os
+
+# TreatmentPlanSource
 
 
 class TreatmentPlanPhsSource(TreatmentPlanSource):
@@ -14,6 +18,18 @@ class TreatmentPlanPhsSource(TreatmentPlanSource):
         self.phaseSpaceFolder = ""
         self.phaseSpaceList_file_name = ""
         self.phaseSpaceList = {}
+        self.position_key_x = "PrePositionLocal_X"
+        self.position_key_y = "PrePositionLocal_Y"
+        self.position_key_z = "PrePositionLocal_Z"
+        self.direction_key_x = "PreDirectionLocal_X"
+        self.direction_key_y = "PreDirectionLocal_Y"
+        self.direction_key_z = "PreDirectionLocal_Z"
+        self.energy_key = "KineticEnergy"
+        self.weight_key = "Weight"
+        self.PDGCode_key = "PDGCode"
+        self.generate_until_next_primary = False
+        self.primary_lower_energy_threshold = 0
+        self.primary_PDGCode = 0
         self.n_sim = 0
         self.sim = sim  # simulation obj to which we want to add the tpPhS source
         self.distance_source_to_isocenter = None
@@ -81,7 +97,6 @@ class TreatmentPlanPhsSource(TreatmentPlanSource):
             # find corresponding phase space file
             if self.phaseSpaceList.get(spot.energy) is not None:
                 source.phsp_file = self.phaseSpaceList.get(spot.energy)
-
             else:
                 print(
                     "ERROR in TreatmentPlanPhsSource: Energy requested from plan file does not exist. Aborting."
@@ -89,31 +104,38 @@ class TreatmentPlanPhsSource(TreatmentPlanSource):
                 print("Requested energy was: ", spot.energy)
                 exit(-1)
 
-            # use the local positions in phase space file
-            source.position_key = "PrePositionLocal"
-            source.direction_key = "PreDirectionLocal"
+            # set keys of phase space file to use
+            source.position_key_x = self.position_key_x
+            source.position_key_y = self.position_key_y
+            source.position_key_z = self.position_key_z
+            source.direction_key_x = self.direction_key_x
+            source.direction_key_y = self.direction_key_y
+            source.direction_key_z = self.direction_key_z
+            source.energy_key = self.energy_key
+            source.weight_key = self.weight_key
+            source.PDGCode_key = self.PDGCode_key
+
             if self.batch_size is not None:
                 source.batch_size = self.batch_size
             else:
                 source.batch_size = 30000
 
-            source.particle = spot.particle_name
-
-            # # set mother
-            # if self.mother is not None:
-            #     source.mother = self.mother
-
             # POSITION:
-            source.override_position = True
+            source.translate_position = True
             source.position.translation = self._get_pbs_position(spot)
+            print("source.position.translation: ", source.position.translation)
 
             # ROTATION:
-            source.override_direction = True
+            source.rotate_direction = True
             source.position.rotation = self._get_pbs_rotation(spot)
 
             # add weight
-            # source.weight = -1
             source.n = nspot
+
+            # allow the possibility to count primaries
+            source.generate_until_next_primary = self.generate_until_next_primary
+            source.primary_lower_energy_threshold = self.primary_lower_energy_threshold
+            source.primary_PDGCode = self.primary_PDGCode
 
         self.actual_sim_particles = tot_sim_particles
 
@@ -189,7 +211,7 @@ class TreatmentPlanPhsSource(TreatmentPlanSource):
                 }
             else:
                 phs_dict = {float(i[0]): str(i[1]) for i in input_arr}
-            print("phs_dict read: ", phs_dict)
+            # print("phs_dict read: ", phs_dict)
         except Exception as e:
             print(
                 "Error in TreatmentPlanPhsSource: could not read the phase space file list. Aborting."

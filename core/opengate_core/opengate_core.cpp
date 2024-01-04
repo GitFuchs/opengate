@@ -66,6 +66,8 @@ void init_G4VPhysicsConstructor(py::module &);
 
 void init_G4PhysicsFreeVector(py::module &);
 
+void init_G4PhysicsFreeVector(py::module &);
+
 void init_G4VUserPrimaryGeneratorAction(py::module &);
 
 void init_G4VUserActionInitialization(py::module &);
@@ -243,19 +245,23 @@ void init_GateParticleFilter(py::module &);
 
 void init_GateThresholdAttributeFilter(py::module &);
 
+void init_GateThresholdAttributeFilter(py::module &);
+
 void init_GateTrackCreatorProcessFilter(py::module &);
 
 void init_GateKineticEnergyFilter(py::module &);
 
 void init_GateDoseActor(py::module &m);
 
-void init_GateAMDMActor(py::module &m);
+void init_GateFluenceActor(py::module &m);
 
 void init_GateLETActor(py::module &m);
 
 void init_GateARFActor(py::module &m);
 
 void init_GateARFTrainingDatasetActor(py::module &m);
+
+void init_GateKillActor(py::module &);
 
 void init_GateKillActor(py::module &);
 
@@ -336,6 +342,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4Transform3D(m);
   init_G4UnitsTable(m);
   init_G4Threading(m);
+  init_G4Threading(m);
 
   init_Randomize(m);
 
@@ -343,6 +350,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4Material(m);
   init_G4Element(m);
   init_G4IonisParamMat(m);
+  init_G4MaterialPropertiesTable(m);
   init_G4MaterialPropertiesTable(m);
 
   init_G4VSteppingVerbose(m);
@@ -359,6 +367,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4VPhysicsConstructor(m);
   init_G4VModularPhysicsList(m);
   init_G4PhysListFactory(m);
+  init_G4PhysicsFreeVector(m);
   init_G4PhysicsFreeVector(m);
 
   init_G4VUserParallelWorld(m);
@@ -451,6 +460,7 @@ PYBIND11_MODULE(opengate_core, m) {
 
   // Gate
   init_GateCheckDeex(m);
+  init_GateCheckDeex(m);
   init_GateInfo(m);
   init_GateVActor(m);
   init_GateActorManager(m);
@@ -458,6 +468,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateParticleFilter(m);
   init_GateTrackCreatorProcessFilter(m);
   init_GateKineticEnergyFilter(m);
+  init_GateThresholdAttributeFilter(m);
   init_GateThresholdAttributeFilter(m);
   init_itk_image(m);
   init_GateDoseActor(m);
@@ -480,6 +491,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateEventAction(m);
   init_GateTrackingAction(m);
   init_GateDoseActor(m);
+  init_GateFluenceActor(m);
   init_GateLETActor(m);
   init_GateSimulationStatisticsActor(m);
   init_GatePhaseSpaceActor(m);
@@ -494,6 +506,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateDigitizerProjectionActor(m);
   init_GateARFActor(m);
   init_GateARFTrainingDatasetActor(m);
+  init_GateKillActor(m);
   init_GateKillActor(m);
   init_GateDigiAttributeManager(m);
   init_GateVDigiAttribute(m);
