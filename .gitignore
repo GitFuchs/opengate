@@ -128,6 +128,7 @@ opengate_temporaire
 /core/opengate_core/.idea
 /core/opengate_core/opengate_lib/.idea
 /core/save
+/core/external/pybind11
 
 
 /build_test/
