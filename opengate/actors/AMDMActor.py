@@ -156,9 +156,9 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # Set the real physical volume name
         self.fPhysicalVolumeName = str(self.g4_phys_vol.GetName())
 
-        print("AMDMActor: StartSimulationAction")
-        print("translation = ", self.user_info.translation)
-        print("origin = ", self.img_origin_during_run)
+        # print("AMDMActor: StartSimulationAction")
+        # print("translation = ", self.user_info.translation)
+        # print("origin = ", self.img_origin_during_run)
 
         # FIXME for multiple run and motion
         if not self.first_run:
@@ -196,7 +196,7 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # vol_name = self.simulation.volume_manager.volumes[self.user_info.mother]
         # vol_type = attached_to_volume.volume_type
 
-        print(f"AMDMActor: StartSimulationAction - vol_type = {vol_type}")
+        # print(f"AMDMActor: StartSimulationAction - vol_type = {vol_type}")
 
         if vol_type == "ImageVolume":
             if self.user_info.img_coord_system:
@@ -207,7 +207,6 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
                 self.output_origin = get_origin_wrt_images_g4_position(
                     img_info, dose_info, self.user_info.translation
                 )
-                print("in true")
         else:
             if self.user_info.img_coord_system:
                 warning(
@@ -217,7 +216,6 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
                     f'volume ("{attached_to_volume.name}", of type "{vol_type}"). '
                     f"So the flag is ignored."
                 )
-            print("in false")
         # user can set the output origin
         if self.user_info.output_origin is not None:
             if self.user_info.img_coord_system:
@@ -227,12 +225,12 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
                     f"but output_origin is set, so img_coord_system ignored."
                 )
             self.output_origin = self.user_info.output_origin
-        print(
-            f"AMDMActor: StartSimulationAction - output_origin = {self.output_origin}"
-        )
+        # print(
+        #     f"AMDMActor: StartSimulationAction - output_origin = {self.output_origin}"
+        # )
 
     def EndSimulationAction(self):
-        print("AMDMActor: EndSimulationAction")
+        # print("AMDMActor: EndSimulationAction")
         g4.GateAMDMActor.EndSimulationAction(self)
 
         # Get the itk image from the cpp side

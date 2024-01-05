@@ -29,6 +29,8 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   // cpp_amdm_delta_image = VectorImageType::New();
   // cpp_amdm_gamma_image = VectorImageType::New();
 
+  // std::cout << "AMDM actor creating" << std::endl;
+
   cpp_amdm_delta_image = ImageType4D::New();
   cpp_amdm_gamma_image = ImageType4D::New();
   cpp_amdm_restricted_edep_image = ImageType::New();
@@ -60,6 +62,11 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   ImageType4D::RegionType region;
   region.SetSize(size);
   region.SetIndex(start);
+
+  // std::cout << "AMDM image size: " << size[0] << " " << size[1] << " " <<
+  // size[2] << " " << size[3] << std::endl; std::cout << "AMDM image spacing: "
+  // << spacing[0] << " " << spacing[1] << " " << spacing[2] << " " <<
+  // spacing[3] << std::endl;
 
   cpp_amdm_delta_image->SetRegions(region);
   cpp_amdm_delta_image->SetSpacing(spacing);
