@@ -14,8 +14,6 @@
 
 G4Mutex GeometryChangeMutex = G4MUTEX_INITIALIZER;
 
-G4Mutex GeometryChangeMutex = G4MUTEX_INITIALIZER;
-
 GateMotionVolumeActor::GateMotionVolumeActor(py::dict &user_info)
     : GateVActor(user_info, true) {
   // fActions.insert("BeginOfRunAction");
@@ -46,8 +44,6 @@ void GateMotionVolumeActor::MoveGeometry(int run_id) {
   // https://geant4-userdoc.web.cern.ch/UsersGuides/ForApplicationDeveloper/html/Detector/Geometry/geomDynamic.html
   auto *gm = G4GeometryManager::GetInstance();
   gm->OpenGeometry(pv);
-  auto *gm = G4GeometryManager::GetInstance();
-  gm->OpenGeometry(pv);
 
   // check the current rotation
   auto rot = pv->GetRotation();
@@ -68,8 +64,6 @@ void GateMotionVolumeActor::MoveGeometry(int run_id) {
 
   // close the geometry manager
   gm->CloseGeometry(true, false, pv);
-  // G4RunManager::GetRunManager()->GeometryHasBeenModified(true);
-  gm->CloseGeometry(false, false, pv);
   // G4RunManager::GetRunManager()->GeometryHasBeenModified(true);
 }
 
