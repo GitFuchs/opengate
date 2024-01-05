@@ -19,13 +19,14 @@ from .miscactors import (
     KillActor,
 )
 from ..utility import make_builders
-
+from .AMDMActor import AMDMActor
 
 actor_type_names = {
     SimulationStatisticsActor,
     DoseActor,
     FluenceActor,
     LETActor,
+    AMDMActor,
     SourceInfoActor,
     PhaseSpaceActor,
     DigitizerHitsCollectionActor,
