@@ -6,6 +6,17 @@ from .base import ActorBase
 from ..utility import g4_units, ensure_filename_is_str
 from ..exception import fatal, warning
 from scipy.spatial.transform import Rotation
+from ..image import (
+    create_3d_image,
+    get_physical_volume,
+    update_image_py_to_cpp,
+    check_filename_type,
+    get_info_from_image,
+    get_origin_wrt_images_g4_position,
+    get_cpp_image,
+    itk_image_view_from_array,
+    align_image_with_physical_volume,
+)
 
 
 class AMDMActor(g4.GateAMDMActor, ActorBase):
@@ -112,25 +123,33 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
     def StartSimulationAction(self):
         # init the origin and direction according to the physical volume
         # (will be updated in the BeginOfRun)
+        attached_to_volume = self.volume_engine.get_volume(self.user_info.mother)
+        if self.user_info.physical_volume_index is None:
+            physical_volume_index = 0
+        else:
+            physical_volume_index = self.user_info.physical_volume_index
         try:
-            self.g4_phys_vol = get_physical_volume(
-                self.volume_engine,
-                self.user_info.mother,
-                self.user_info.physical_volume_index,
+            self.g4_phys_vol = attached_to_volume.g4_physical_volumes[
+                physical_volume_index
+            ]
+        except IndexError:
+            fatal(
+                f"Error in the AMDMActor {self.user_info.name}. "
+                f"Could not find the physical volume with index {physical_volume_index} "
+                f"in volume '{self.user_info.mother}' to which this actor is attached. "
             )
-        except:
-            fatal(f"Error in the AMDMActor {self.user_info.name}")
-        attach_image_to_physical_volume(
-            self.g4_phys_vol.GetName(),
+
+        align_image_with_physical_volume(
+            attached_to_volume,
             self.py_restricted_edep_image,
-            self.user_info.translation,
+            initial_translation=self.user_info.translation,
         )
-        # attach_image_to_physical_volume(
+        # align_image_with_physical_volume(
         #     self.g4_phys_vol.GetName(),
         #     self.py_amdm_delta_image,
         #     self.user_info.translation,
         # )
-        # attach_image_to_physical_volume(
+        # align_image_with_physical_volume(
         #     self.g4_phys_vol.GetName(),
         #     self.py_amdm_omega_image,
         #     self.user_info.translation,

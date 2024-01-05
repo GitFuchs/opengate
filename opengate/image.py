@@ -54,6 +54,81 @@ def create_3d_image(size, spacing, pixel_type="float", allocate=True, fill_value
     return img
 
 
+# def create_4d_image(
+#     size, spacing, pixel_type="float", allocate=True, fill_value=0, FourthDimension=10
+# ):
+#     dim = 4
+#     pixel_type = itk.ctype(pixel_type)
+#     image_type = itk.Image[pixel_type, dim]
+#     img = image_type.New()
+#     region = itk.ImageRegion[dim]()
+#     size = np.append(np.array(size), FourthDimension)
+#     region.SetSize(size.tolist())
+#     region.SetIndex([0, 0, 0, 0])
+#     spacing = np.append(np.array(spacing), 1)
+#     img.SetRegions(region)
+#     img.SetSpacing(spacing)
+#     # (default origin and direction)
+#     if allocate:
+#         img.Allocate()
+#         img.FillBuffer(fill_value)
+#     return img
+
+
+def create_vector_image(
+    sizePassed,
+    spacing,
+    pixel_type="float",
+    allocate=True,
+    fill_value=0,
+    vector_dimension=10,
+):
+    image_dimension = 3
+    vector_dimension = 6
+    Pixel_type = itk.Vector[itk.ctype(pixel_type), vector_dimension]
+    # Pixel_type = itk.Vector[itk.ctype(pixel_type), 6]
+
+    image_type = itk.Image[Pixel_type, image_dimension]
+
+    img = image_type.New()
+
+    start = itk.Index[image_dimension]()
+    start[0] = 0
+    start[1] = 0
+    start[2] = 0
+
+    size = itk.Size[image_dimension]()
+    size[0] = int(sizePassed[0])
+    size[1] = int(sizePassed[1])
+    size[2] = int(sizePassed[2])
+
+    region = itk.ImageRegion[image_dimension]()
+    print(size)
+    region.SetSize(size)
+    region.SetIndex(start)
+    spacing = np.array(spacing)
+
+    img.SetRegions(region)
+    img.SetSpacing(spacing)
+
+    img.Allocate()
+
+    region = itk.ImageRegion[image_dimension]()
+    size = np.array(size)
+    region.SetSize(size.tolist())
+    region.SetIndex([0, 0, 0])
+    spacing = np.array(spacing)
+    img.SetRegions(region)
+    img.SetSpacing(spacing)
+    # (default origin and direction)
+    vectorValue = Pixel_type()
+    vectorValue = [fill_value] * vector_dimension
+    if allocate:
+        img.Allocate()
+        img.FillBuffer(vectorValue)
+    return img
+
+
 def create_image_like(like_image, allocate=True, pixel_type=""):
     # TODO fix pixel_type -> copy from image rather than argument
     info = get_info_from_image(like_image)
