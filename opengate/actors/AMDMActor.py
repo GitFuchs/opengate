@@ -1,11 +1,11 @@
-import opengate_core as g4
 import itk
 import numpy as np
-import opengate as gate
+import opengate_core as g4
 from .base import ActorBase
 from ..utility import g4_units, ensure_filename_is_str
 from ..exception import fatal, warning
-from scipy.spatial.transform import Rotation
+
+# from scipy.spatial.transform import Rotation
 from ..image import (
     create_3d_image,
     update_image_py_to_cpp,
@@ -156,6 +156,10 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # Set the real physical volume name
         self.fPhysicalVolumeName = str(self.g4_phys_vol.GetName())
 
+        print("AMDMActor: StartSimulationAction")
+        print("translation = ", self.user_info.translation)
+        print("origin = ", self.img_origin_during_run)
+
         # FIXME for multiple run and motion
         if not self.first_run:
             warning(f"Not implemented yet: AMDMActor with several runs")
@@ -181,34 +185,39 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
 
         # If attached to a voxelized volume, we may want to use its coord system.
         # So, we compute in advance what will be the final origin of the dose map
-        vol_name = self.user_info.mother
-        vol_type = self.simulation.get_volume_user_info(vol_name).type_name
-        # vol_name = self.simulation.volume_manager.volumes[self.user_info.mother]
-        # vol_type = attached_to_volume.volume_type
+        attached_to_volume = self.simulation.volume_manager.volumes[
+            self.user_info.mother
+        ]
+        vol_type = attached_to_volume.volume_type
         self.output_origin = self.img_origin_during_run
 
-        print(f"AMDMActor: StartSimulationAction - vol_type = {vol_type}")
-        print("vol_name = ", vol_name)
+        # vol_name = self.user_info.mother
+        # vol_type = self.simulation.get_volume_user_info(vol_name).type_name
+        # vol_name = self.simulation.volume_manager.volumes[self.user_info.mother]
+        # vol_type = attached_to_volume.volume_type
 
-        if vol_type == "Image":
+        print(f"AMDMActor: StartSimulationAction - vol_type = {vol_type}")
+
+        if vol_type == "ImageVolume":
             if self.user_info.img_coord_system:
-                vol = self.volume_engine.g4_volumes[vol_name]
                 # Translate the output dose map so that its center correspond to the image center.
                 # The origin is thus the center of the first voxel.
-                img_info = get_info_from_image(vol.image)
+                img_info = get_info_from_image(attached_to_volume.itk_image)
                 dose_info = get_info_from_image(self.py_restricted_edep_image)
                 self.output_origin = get_origin_wrt_images_g4_position(
                     img_info, dose_info, self.user_info.translation
                 )
+                print("in true")
         else:
             if self.user_info.img_coord_system:
                 warning(
                     f'AMDMActor "{self.user_info.name}" has '
                     f"the flag img_coord_system set to True, "
                     f"but it is not attached to an Image "
-                    f'volume ("{vol_name}", of type "{vol_type}"). '
+                    f'volume ("{attached_to_volume.name}", of type "{vol_type}"). '
                     f"So the flag is ignored."
                 )
+            print("in false")
         # user can set the output origin
         if self.user_info.output_origin is not None:
             if self.user_info.img_coord_system:
@@ -218,8 +227,12 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
                     f"but output_origin is set, so img_coord_system ignored."
                 )
             self.output_origin = self.user_info.output_origin
+        print(
+            f"AMDMActor: StartSimulationAction - output_origin = {self.output_origin}"
+        )
 
     def EndSimulationAction(self):
+        print("AMDMActor: EndSimulationAction")
         g4.GateAMDMActor.EndSimulationAction(self)
 
         # Get the itk image from the cpp side
@@ -250,5 +263,7 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # itk.imwrite(self.py_amdm_delta_image, n)
 
         # edep image
-        n = str(self.user_info.output).replace(".mhd", "-restrictedEdep.mhd")
+        n = ensure_filename_is_str(self.user_info.output).replace(
+            ".mhd", "-restrictedEdep.mhd"
+        )
         itk.imwrite(self.py_restricted_edep_image, n)
