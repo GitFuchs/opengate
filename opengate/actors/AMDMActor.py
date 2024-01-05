@@ -8,9 +8,7 @@ from ..exception import fatal, warning
 from scipy.spatial.transform import Rotation
 from ..image import (
     create_3d_image,
-    get_physical_volume,
     update_image_py_to_cpp,
-    check_filename_type,
     get_info_from_image,
     get_origin_wrt_images_g4_position,
     get_cpp_image,
@@ -47,7 +45,7 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
     def set_default_user_info(user_info):
         ActorBase.set_default_user_info(user_info)
         # required user info, default values
-        mm = g4_units("mm")
+        mm = g4_units.mm
         user_info.size = [10, 10, 10]
         user_info.spacing = [1 * mm, 1 * mm, 1 * mm]
         user_info.output = "AMDM.mhd"  # FIXME change to 'output' ?
@@ -185,9 +183,13 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # So, we compute in advance what will be the final origin of the dose map
         vol_name = self.user_info.mother
         vol_type = self.simulation.get_volume_user_info(vol_name).type_name
+        # vol_name = self.simulation.volume_manager.volumes[self.user_info.mother]
+        # vol_type = attached_to_volume.volume_type
         self.output_origin = self.img_origin_during_run
 
-        # FIXME put out of the class ?
+        print(f"AMDMActor: StartSimulationAction - vol_type = {vol_type}")
+        print("vol_name = ", vol_name)
+
         if vol_type == "Image":
             if self.user_info.img_coord_system:
                 vol = self.volume_engine.g4_volumes[vol_name]
@@ -248,7 +250,5 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         # itk.imwrite(self.py_amdm_delta_image, n)
 
         # edep image
-        n = check_filename_type(self.user_info.output).replace(
-            ".mhd", "-restrictedEdep.mhd"
-        )
+        n = str(self.user_info.output).replace(".mhd", "-restrictedEdep.mhd")
         itk.imwrite(self.py_restricted_edep_image, n)
