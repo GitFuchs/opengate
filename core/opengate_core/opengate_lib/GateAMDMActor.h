@@ -48,6 +48,8 @@ public:
                     const ImageType::Pointer denominatorImage);
   std::string remove_extension(const std::string &filename);
 
+  void write4DImage(const ImageType4D::Pointer image, std::string filename);
+
   // typedef itk::Vector<float, 10> PixelType;
 
   // typedef itk::VariableLengthVector<float> PixelType;
@@ -65,7 +67,9 @@ public:
   // VectorImageType::Pointer cpp_amdm_delta_image;
   // VectorImageType::Pointer cpp_amdm_gamma_image;
 
-  const int kMaxAMDMBins = 10;
+  // const int kMaxAMDMBins = 10;
+  int fAMDM_total_bin_number;
+  bool fstoreMergingData;
 
   // // Option: indicate if we must compute uncertainty
   // bool fUncertaintyFlag;
