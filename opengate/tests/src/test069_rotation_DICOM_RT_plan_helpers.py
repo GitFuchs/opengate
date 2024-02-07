@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import opengate as gate
-import os, sys
+import sys
 from scipy.spatial.transform import Rotation
 import numpy as np
 import itk
 from opengate.tests import utility
 
 sys.path.append("./data")
-import opengate.contrib.linacs.elektasynergy as gate_linac
 from opengate.geometry.volumes import unite_volumes, subtract_volumes, intersect_volumes
-import pydicom
 import gatetools as gt
 from box import Box
 import scipy
@@ -1260,12 +1258,12 @@ def define_apertures(field_X, field_Y, SAD=1000):
     pos_X_leaf = np.zeros(160)
     pos_X_leaf[0:80] -= 0.5 * mm
     pos_X_leaf[80:160] += 0.5 * mm
-    pos_X_leaf[
-        39 - int(nb_of_leaf_open / 2) : 39 + int(nb_of_leaf_open / 2) + 1
-    ] = -MLC_X_aperture
-    pos_X_leaf[
-        119 - int(nb_of_leaf_open / 2) : 119 + int(nb_of_leaf_open / 2) + 1
-    ] = MLC_X_aperture
+    pos_X_leaf[39 - int(nb_of_leaf_open / 2) : 39 + int(nb_of_leaf_open / 2) + 1] = (
+        -MLC_X_aperture
+    )
+    pos_X_leaf[119 - int(nb_of_leaf_open / 2) : 119 + int(nb_of_leaf_open / 2) + 1] = (
+        MLC_X_aperture
+    )
 
     pos_X_leaf = np.array(10 * pos_X_leaf, dtype=int) / 10
 
