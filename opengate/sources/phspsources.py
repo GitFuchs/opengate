@@ -11,6 +11,10 @@ from .generic import SourceBase
 import random
 
 
+class PhaseSpaceLock:
+    lock = None
+
+
 class PhaseSpaceSourceGenerator:
     """
     Class that read phase space root file and extract position/direction/energy/weights of particles.
@@ -27,6 +31,7 @@ class PhaseSpaceSourceGenerator:
         self.batch = None
         self.points = None
         self.w = None
+        self.lock = PhaseSpaceLock.lock
 
     def __getstate__(self):
         self.lock = None
@@ -112,6 +117,9 @@ class PhaseSpaceSourceGenerator:
         Once created here, the particles are copied to cpp.
         (Yes maybe the copy could be avoided, but I did not manage to do it)
         """
+        # # Acquire the lock before executing the function
+        # print("threadID: ", opengate_core.G4GetThreadId(), "lockID:", id(self.lock))
+        # self.lock.acquire()
 
         # read data from root tree
         ui = self.user_info
@@ -132,6 +140,21 @@ class PhaseSpaceSourceGenerator:
             entry_stop=self.current_index + current_batch_size,
             library="numpy",
         )
+        # Get the file name
+        print("root file name: ", self.root_file.file.file_path)
+        print(
+            "threadID: ",
+            opengate_core.G4GetThreadId(),
+            "batch entry_start: ",
+            self.current_index,
+            "batch entry_stop: ",
+            self.current_index + current_batch_size,
+            "batch_size: ",
+            current_batch_size,
+        )
+        # print("batch entry_stop: ", self.current_index + current_batch_size)
+        # print("batch_size: ", current_batch_size)
+
         batch = self.batch
         # ensure encoding is float32
         for key in batch:
@@ -245,6 +268,9 @@ class PhaseSpaceSourceGenerator:
             print("source.fDirectionZ: ", batch[ui.direction_key_z])
             print("source.fEnergy dtype: ", batch[ui.energy_key].dtype)
 
+        # Release the lock when the function execution is complete
+        # self.lock.release()
+
         return current_batch_size
 
 
@@ -319,9 +345,18 @@ class PhaseSpaceSource(SourceBase):
     def __init__(self, user_info):
         super().__init__(user_info)
         self.particle_generator = PhaseSpaceSourceGenerator()
+        # self.lock = threading.Lock()
+        # PhaseSpaceLock.lock = threading.Lock()  # Set the shared variable
+        # print(
+        #     "threadID: ",
+        #     opengate_core.G4GetThreadId(),
+        #     "lockID:",
+        #     id(PhaseSpaceLock.lock),
+        # )
 
     def initialize(self, run_timing_intervals):
         # initialize the mother class generic source
+        # self.lock = threading.Lock()
 
         SourceBase.initialize(self, run_timing_intervals)
 
@@ -352,17 +387,21 @@ class PhaseSpaceSource(SourceBase):
                     f"PhaseSpaceSource: generate_until_next_primary is True but no primary_lower_energy_threshold is defined"
                 )
         # print("threads: ", self.simulation.user_info.number_of_threads)
+        # print("number of particles:", ui.n)
         # if not set, initialize the entry_start to 0 or to a list for multithreading
         if ui.entry_start is None:
             if not opengate_core.IsMultithreadedApplication():
                 ui.entry_start = 0
             else:
+                # create a entry_start array with the correct number of start entries
+                # all entries are spaced by the number of particles/thread
                 n_threads = self.simulation.user_info.number_of_threads
                 # ui.entry_start = [0] * n_threads
-                random_number = random.randint(0, 1e8)
-                step = 1e6 + random_number  # Specify the increment value
+                step = np.ceil(ui.n / n_threads) + 1  # Specify the increment value
                 ui.entry_start = [i * step for i in range(n_threads)]
+            print("INFO: entry_start not set. Using default values: ", ui.entry_start)
 
+        # print("intialize entry_start: ", ui.entry_start)
         # initialize the generator (read the phsp file)
         self.particle_generator.initialize(self.user_info)
 
