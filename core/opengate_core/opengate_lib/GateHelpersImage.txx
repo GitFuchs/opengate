@@ -17,6 +17,15 @@ void ImageAddValue(typename ImageType::Pointer image,
   image->SetPixel(index, v + value);
 }
 
+// template <class ImageType4D>
+// void ImageAddValue4D(typename ImageType4D::Pointer image,
+//                      typename ImageType4D::IndexType index,
+//                      typename ImageType4D::PixelType value)
+// {
+//   auto v = image->GetPixel(index); // FIXME maybe 2 x FastComputeOffset can be spared ?
+//   image->SetPixel(index, v + value);
+// }
+
 template <class ImageType>
 void AttachImageToVolume(typename ImageType::Pointer image,
                          std::string volumeName,

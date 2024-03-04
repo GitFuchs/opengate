@@ -22,8 +22,8 @@ class GateAMDMActor : public GateVActor {
 
 public:
   // Image type is 4D float by default
-  typedef itk::Image<float, 3> ImageType;
-  typedef itk::Image<float, 4> ImageType4D;
+  typedef itk::Image<double, 3> ImageType;
+  typedef itk::Image<double, 4> ImageType4D;
 
   // Constructor
   GateAMDMActor(py::dict &user_info);

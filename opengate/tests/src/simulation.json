@@ -1,0 +1,211 @@
+{
+  "user_info": {
+    "name": "simulation",
+    "verbose_level": 20,
+    "running_verbose_level": 0,
+    "g4_verbose_level": 1,
+    "g4_verbose": false,
+    "visu": false,
+    "visu_type": "qt",
+    "visu_filename": null,
+    "visu_verbose": false,
+    "visu_commands": [
+      "# default visualization",
+      "#/vis/open OGLSQt",
+      "/vis/open OGLIQt",
+      "/vis/scene/create",
+      "/vis/drawVolume worlds",
+      "/vis/viewer/flush",
+      "# no verbose",
+      "/control/verbose 0",
+      "# Work but generate txt on terminal",
+      "/vis/scene/add/axes 0 0 0 50 cm",
+      "/vis/scene/add/text 10 0 0 cm  20 0 0   X",
+      "/vis/scene/add/text 0 10 0 cm  20 0 0   Y",
+      "/vis/scene/add/text 0 0 10 cm  20 0 0   Z",
+      "# change orientation (for debug)",
+      "#/vis/viewer/set/upVector 0 0 1",
+      "#/vis/viewer/set/viewpointVector 0 1 0",
+      "#/vis/viewer/set/upVector 1 0 0",
+      "#/vis/viewer/set/viewpointVector 0 0 1",
+      "#/vis/viewer/set/upVector 0 1 0",
+      "#/vis/viewer/set/viewpointVector 1 0 0",
+      "/vis/sceneHandler/attach",
+      "/vis/modeling/trajectories/create/drawByParticleID",
+      "/tracking/storeTrajectory 1",
+      "/vis/scene/endOfEventAction accumulate",
+      "/vis/scene/add/trajectories",
+      "/vis/viewer/set/auxiliaryEdge true"
+    ],
+    "visu_commands_vrml": [
+      "/vis/open                             VRML2FILE",
+      "/vis/drawVolume worlds",
+      "/vis/modeling/trajectories/create/drawByParticleID",
+      "/tracking/storeTrajectory             1",
+      "/vis/scene/add/trajectories",
+      "/vis/scene/endOfEventAction           accumulate",
+      "/vis/scene/backgroundColour           0 0 0",
+      "#/vis/viewer/flush"
+    ],
+    "visu_commands_gdml": [
+      "/vis/open OGLI 600x600-0+0",
+      "/vis/viewer/set/autoRefresh false",
+      "/vis/verbose errors",
+      "/vis/drawVolume worlds",
+      "/vis/modeling/trajectories/create/drawByParticleID",
+      "/tracking/storeTrajectory             1",
+      "/vis/scene/add/trajectories",
+      "/vis/scene/endOfEventAction           accumulate",
+      "/vis/viewer/set/autoRefresh true",
+      "/vis/verbose warnings",
+      "#/vis/viewer/flush"
+    ],
+    "check_volumes_overlap": true,
+    "number_of_threads": 1,
+    "force_multithread_mode": false,
+    "random_engine": "MixMaxRng",
+    "random_seed": "auto",
+    "run_timing_intervals": [
+      [
+        0.0,
+        1000000000.0
+      ]
+    ],
+    "output_dir": ".",
+    "store_json_archive": true,
+    "json_archive_filename": {
+      "__pathlib_path__": [
+        "simulation.json"
+      ]
+    },
+    "store_input_files": false
+  },
+  "object_type": "Simulation",
+  "object_type_full": "<class 'opengate.managers.Simulation'>",
+  "class_module": "opengate.managers",
+  "i_am_a_gate_object": true,
+  "volume_manager": {
+    "user_info": {
+      "name": "VolumeManager"
+    },
+    "object_type": "VolumeManager",
+    "object_type_full": "<class 'opengate.managers.VolumeManager'>",
+    "class_module": "opengate.managers",
+    "i_am_a_gate_object": true,
+    "volumes": {
+      "world": {
+        "user_info": {
+          "name": "world",
+          "size": [
+            100000.0,
+            100000.0,
+            100000.0
+          ],
+          "mother": null,
+          "material": "G4_WATER",
+          "translation": [
+            0,
+            0,
+            0
+          ],
+          "color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "rotation": {
+            "__ndarray__": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "__dtype__": "float64",
+            "__shape__": [
+              3,
+              3
+            ]
+          },
+          "build_physical_volume": true,
+          "repeat": null
+        },
+        "object_type": "BoxVolume",
+        "object_type_full": "<class 'opengate.geometry.volumes.BoxVolume'>",
+        "class_module": "opengate.geometry.volumes",
+        "i_am_a_gate_object": true
+      }
+    },
+    "parallel_world_volumes": []
+  },
+  "physics_manager": {
+    "user_info": {
+      "name": "physics_manager",
+      "physics_list_name": "G4EmStandardPhysics_option4",
+      "global_production_cuts": {
+        "all": 1000000.0,
+        "gamma": null,
+        "electron": null,
+        "positron": null,
+        "proton": null
+      },
+      "apply_cuts": true,
+      "energy_range_min": null,
+      "energy_range_max": null,
+      "optical_properties_file": {
+        "__pathlib_path__": [
+          "/",
+          "opt",
+          "simulation",
+          "Gate10Development",
+          "opengate",
+          "opengate",
+          "data",
+          "OpticalProperties.xml"
+        ]
+      },
+      "user_limits_particles": {
+        "all": false,
+        "all_charged": true,
+        "gamma": false,
+        "electron": false,
+        "positron": false,
+        "proton": false
+      },
+      "em_parameters": {
+        "fluo": null,
+        "auger": null,
+        "auger_cascade": null,
+        "pixe": null,
+        "deexcitation_ignore_cut": null
+      },
+      "em_switches_world": {
+        "deex": null,
+        "auger": null,
+        "pixe": null
+      },
+      "special_physics_constructors": {
+        "G4DecayPhysics": true,
+        "G4RadioactiveDecayPhysics": true,
+        "G4OpticalPhysics": false,
+        "G4EmDNAPhysics": false
+      }
+    },
+    "object_type": "PhysicsManager",
+    "object_type_full": "<class 'opengate.managers.PhysicsManager'>",
+    "class_module": "opengate.managers",
+    "i_am_a_gate_object": true,
+    "regions": {}
+  }
+}

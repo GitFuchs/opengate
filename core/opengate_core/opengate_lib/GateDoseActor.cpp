@@ -223,7 +223,6 @@ void GateDoseActor::SteppingAction(G4Step *step) {
     if (fcpImageForThreadsFlag) {
 
       locald.edep_worker_flatimg[index_flat] += scoring_quantity;
-
     } else {
       G4AutoLock mutex(&SetPixelMutex);
 
@@ -352,7 +351,6 @@ void GateDoseActor::ComputeSquareImage() {
         ImageAddValue<Image3DType>(cpp_square_image, index_f, pixelValue_cpp);
       }
     }
-
   } else {
     if (fSquareFlag) {
 

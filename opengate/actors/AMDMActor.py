@@ -102,7 +102,7 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         size = np.array(self.user_info.size)
         spacing = np.array(self.user_info.spacing)
 
-        self.py_restricted_edep_image = create_3d_image(size, spacing)
+        self.py_restricted_edep_image = create_3d_image(size, spacing, "double")
 
         # self.py_amdm_delta_image = create_4d_image(
         #     size, spacing, FourthDimension=10

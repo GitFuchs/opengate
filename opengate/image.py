@@ -25,6 +25,10 @@ def update_image_py_to_cpp(py_img, cpp_img, copy_data=False):
     # something that can be read by SetDirection !
     d = py_img.GetDirection().GetVnlMatrix().as_matrix()
     rotation = itk.GetArrayFromVnlMatrix(d)
+    # print("d ", d)
+    # print("rotation ", rotation)
+    # print("py_img ", py_img)
+    # print("cpp_img ", cpp_img)
     cpp_img.set_direction(rotation)
     if copy_data:
         arr = itk.array_view_from_image(py_img)
@@ -278,6 +282,15 @@ def align_image_with_physical_volume(
     translation, rotation = get_transform_world_to_local(volume)
     # compute origin
     info = get_info_from_image(image)
+    # print("size ", info.size)
+    # print("spacing ", info.spacing)
+    # print("initial translation ", initial_translation)
+    # print("translation ", translation)
+    # print("rotation ", rotation)
+
+    # hack for 4D images
+    # if len(initial_translation) == 3 and len(info.size) == 4:
+    #     initial_translation.append(0)
     origin = -info.size * info.spacing / 2.0 + info.spacing / 2.0 + initial_translation
     origin = (
         Rotation.from_matrix(rotation[copy_index]).apply(origin)
