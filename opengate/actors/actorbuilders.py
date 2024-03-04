@@ -20,6 +20,7 @@ from .miscactors import (
 )
 from .dynamicactors import DynamicGeometryActor
 from ..utility import make_builders
+from .AMDMActor import AMDMActor
 
 
 actor_type_names = {
@@ -27,6 +28,7 @@ actor_type_names = {
     DoseActor,
     FluenceActor,
     LETActor,
+    AMDMActor,
     SourceInfoActor,
     PhaseSpaceActor,
     DigitizerHitsCollectionActor,
