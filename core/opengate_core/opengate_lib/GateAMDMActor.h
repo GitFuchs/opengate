@@ -9,22 +9,21 @@
 #define GateAMDMActor_h
 
 #include "G4VPrimitiveScorer.hh"
+#include "GateAMDMActor_lookUpTable.hh"
 #include "GateVActor.h"
 #include "itkImage.h"
-#include <pybind11/stl.h>
-#include "GateAMDMActor_lookUpTable.hh"
-#include <string>
 #include "itkImageFileWriter.h"
+#include <pybind11/stl.h>
+#include <string>
 
 namespace py = pybind11;
 
-class GateAMDMActor : public GateVActor
-{
+class GateAMDMActor : public GateVActor {
 
 public:
   // Image type is 4D float by default
-  typedef itk::Image<float, 3> ImageType;
-  typedef itk::Image<float, 4> ImageType4D;
+  typedef itk::Image<double, 3> ImageType;
+  typedef itk::Image<double, 4> ImageType4D;
 
   // Constructor
   GateAMDMActor(py::dict &user_info);
@@ -39,11 +38,14 @@ public:
 
   virtual void EndOfRunAction(const G4Run *);
 
-  virtual void
-  EndSimulationAction();
+  virtual void EndSimulationAction();
 
-  ImageType4D::Pointer divide4dImage(const ImageType4D::Pointer imageToProcess, const ImageType4D::Pointer denominatorImage);
-  ImageType4D::Pointer divide4dby3dImage(const ImageType4D::Pointer imageToProcess, const ImageType::Pointer denominatorImage);
+  ImageType4D::Pointer
+  divide4dImage(const ImageType4D::Pointer imageToProcess,
+                const ImageType4D::Pointer denominatorImage);
+  ImageType4D::Pointer
+  divide4dby3dImage(const ImageType4D::Pointer imageToProcess,
+                    const ImageType::Pointer denominatorImage);
   std::string remove_extension(const std::string &filename);
 
   // typedef itk::Vector<float, 10> PixelType;
