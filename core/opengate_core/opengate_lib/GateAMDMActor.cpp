@@ -31,11 +31,11 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
 
   // define the number of bins to be used for the AMDM model
   fAMDM_total_bin_number = DictGetInt(user_info, "AMDM_Bins");
-  std::cout << "fAMDM_total_bin_number: " << fAMDM_total_bin_number
-            << std::endl;
+  // std::cout << "fAMDM_total_bin_number: " << fAMDM_total_bin_number
+  //           << std::endl;
 
   fstoreMergingData = DictGetBool(user_info, "AMDM_Bins");
-  std::cout << "fstoreMergingData: " << fstoreMergingData << std::endl;
+  // std::cout << "fstoreMergingData: " << fstoreMergingData << std::endl;
 
   cpp_amdm_delta_image = ImageType4D::New();
   cpp_amdm_gamma_image = ImageType4D::New();
