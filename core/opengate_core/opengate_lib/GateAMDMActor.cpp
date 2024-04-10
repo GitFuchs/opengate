@@ -35,7 +35,7 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   // std::cout << "fAMDM_total_bin_number: " << fAMDM_total_bin_number
   //           << std::endl;
 
-  fstoreMergingData = DictGetBool(user_info, "AMDM_Bins");
+  fstoreMergingData = DictGetBool(user_info, "storeMergingData");
   // std::cout << "fstoreMergingData: " << fstoreMergingData << std::endl;
 
   cpp_amdm_delta_image = ImageType4D::New();
