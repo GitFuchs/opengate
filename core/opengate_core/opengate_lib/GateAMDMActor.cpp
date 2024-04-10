@@ -464,12 +464,14 @@ void GateAMDMActor::EndSimulationAction() {
     GateAMDMActor::write4DImage(cpp_amdm_gamma_image, outputFileName);
   }
 
+  // divide gamma by delta
   cpp_amdm_gamma_image =
       GateAMDMActor::divide4dImage(cpp_amdm_gamma_image, cpp_amdm_delta_image);
   // std::cout << "gamma after division: " <<
   // cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
 
-  // divide delta by restricted edep
+  // divide delta by restricted edep, every bin by the same edep
+
   // std::cout << "delta before division: " <<
   // cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl;
   cpp_amdm_delta_image = GateAMDMActor::divide4dby3dImage(
@@ -478,39 +480,12 @@ void GateAMDMActor::EndSimulationAction() {
   // cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl; write images to
   // file
 
-  // typedef itk::Image<float, 4> ImageType4D;
-
-  // using WriterType = itk::ImageFileWriter<ImageType4D>;
-  // auto writer = WriterType::New();
-
   outputFileName = sOutputFileNameBase + "-delta.mhd";
   // std::cout << "outputFileName: " << outputFileName << std::endl;
   GateAMDMActor::write4DImage(cpp_amdm_delta_image, outputFileName);
-  //     writer->SetFileName(outputFileName);
-  // writer->SetInput(cpp_amdm_delta_image);
-  // try
-  // {
-  //   writer->Update();
-  // }
-  // catch (const itk::ExceptionObject &error)
-  // {
-  //   std::cerr << "Error: " << error << std::endl;
-  //   exit(EXIT_FAILURE);
-  // }
 
   outputFileName = sOutputFileNameBase + "-gamma.mhd";
   GateAMDMActor::write4DImage(cpp_amdm_gamma_image, outputFileName);
-  // writer->SetFileName(outputFileName);
-  // writer->SetInput(cpp_amdm_gamma_image);
-  // try
-  // {
-  //   writer->Update();
-  // }
-  // catch (const itk::ExceptionObject &error)
-  // {
-  //   std::cerr << "Error: " << error << std::endl;
-  //   exit(EXIT_FAILURE);
-  // }
 }
 
 std::string GateAMDMActor::remove_extension(const std::string &filename) {
