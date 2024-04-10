@@ -54,6 +54,8 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         user_info.LUTfilename = "AMDM_LUT.txt"
         user_info.physical_volume_index = None
         user_info.hit_type = "random"
+        user_info.AMDM_Bins = int(10)
+        user_info.storeMergingData = False
 
     def __init__(self, user_info):
         ActorBase.__init__(self, user_info)
@@ -71,7 +73,6 @@ class AMDMActor(g4.GateAMDMActor, ActorBase):
         self.first_run = None
         self.output_origin = None
         self.LUTfilename = None
-        self.AMDM_Bins = 6
 
     def __str__(self):
         u = self.user_info

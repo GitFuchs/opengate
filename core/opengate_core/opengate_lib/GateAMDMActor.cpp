@@ -29,6 +29,14 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   // cpp_amdm_delta_image = VectorImageType::New();
   // cpp_amdm_gamma_image = VectorImageType::New();
 
+  // define the number of bins to be used for the AMDM model
+  fAMDM_total_bin_number = DictGetInt(user_info, "AMDM_Bins");
+  std::cout << "fAMDM_total_bin_number: " << fAMDM_total_bin_number
+            << std::endl;
+
+  fstoreMergingData = DictGetBool(user_info, "AMDM_Bins");
+  std::cout << "fstoreMergingData: " << fstoreMergingData << std::endl;
+
   cpp_amdm_delta_image = ImageType4D::New();
   cpp_amdm_gamma_image = ImageType4D::New();
   cpp_amdm_restricted_edep_image = ImageType::New();
@@ -43,10 +51,10 @@ GateAMDMActor::GateAMDMActor(py::dict &user_info)
   fImageSize = DictGetG4ThreeVector(user_info, "size");
 
   ImageType4D::SizeType size;
-  size[0] = fImageSize[0]; // size along X
-  size[1] = fImageSize[1]; // size along Y
-  size[2] = fImageSize[2]; // size along Z
-  size[3] = kMaxAMDMBins;  // size along T
+  size[0] = fImageSize[0];          // size along X
+  size[1] = fImageSize[1];          // size along Y
+  size[2] = fImageSize[2];          // size along Z
+  size[3] = fAMDM_total_bin_number; // size along T
 
   ImageType4D::SpacingType spacing;
   spacing[0] = fImageSpacing[0]; // spacing along X
@@ -224,8 +232,9 @@ void GateAMDMActor::SteppingAction(G4Step *step) {
     // std::cout << "starting lookup" << std::endl;
     success = famdm_tables->findEntriesByEnergy(charge, kinEnergy / atomic_mass,
                                                 entry);
-    // first kMaxAMDMBins entries for gamma, second kMaxAMDMBins entries for
-    // delta std::cout << "entry size: " << entry.size() << std::endl; std::cout
+    // first fAMDM_total_bin_number entries for gamma, second
+    // fAMDM_total_bin_number entries for delta std::cout << "entry size: " <<
+    // entry.size() << std::endl; std::cout
     // << "entry 0: " << entry[0] << std::endl; std::cout << "success is not yet
     // there" << std::endl;
     if (success) {
@@ -239,7 +248,7 @@ void GateAMDMActor::SteppingAction(G4Step *step) {
       G4double delta_e = 0;
       // loop over all bins
       // first half of lookUpTable contains gamma, second half contains delta
-      int secondHalf = kMaxAMDMBins;
+      int secondHalf = fAMDM_total_bin_number;
 
       // using PixelType = itk::Vector<float, 10>;
 
@@ -247,8 +256,8 @@ void GateAMDMActor::SteppingAction(G4Step *step) {
       // VectorImageType::PixelType BinnedPixel_delta_e;
       // VectorImageType::PixelType BinnedPixel_gamma_d;
 
-      // BinnedPixel_delta_e.SetSize(kMaxAMDMBins);
-      // BinnedPixel_gamma_d.SetSize(kMaxAMDMBins);
+      // BinnedPixel_delta_e.SetSize(fAMDM_total_bin_number);
+      // BinnedPixel_gamma_d.SetSize(fAMDM_total_bin_number);
 
       // // convert G4ThreeVector to itk PointType
       ImageType4D::PointType point4D;
@@ -278,7 +287,7 @@ void GateAMDMActor::SteppingAction(G4Step *step) {
       // for every bin, we have two LUT entries going from 0 to 9=kMaxMCFBins-1
       // LUT entries going from 0 to 9=kMaxMCFBins-1
       // we loop through all bins and create the pixel value for each bin
-      for (int i = 0; i < kMaxAMDMBins; i++) {
+      for (int i = 0; i < fAMDM_total_bin_number; i++) {
         index4D[3] = i;
         // std::cout << "point4D: " << point4D << std::endl;
         // std::cout << "index4D: " << index4D << std::endl;
@@ -433,14 +442,28 @@ void GateAMDMActor::EndSimulationAction() {
   // divide gamma by delta
 
   // // create index for pixel for debugging output only
-  ImageType4D::IndexType pixelIndex;
-  pixelIndex[0] = 0; // x position of the pixel
-  pixelIndex[1] = 0; // y position of the pixel
-  pixelIndex[2] = 0; // z position of the pixel
-  pixelIndex[3] = 0; // bin position of the pixel
+  // ImageType4D::IndexType pixelIndex;
+  // pixelIndex[0] = 0; // x position of the pixel
+  // pixelIndex[1] = 0; // y position of the pixel
+  // pixelIndex[2] = 0; // z position of the pixel
+  // pixelIndex[3] = 0; // bin position of the pixel
 
   // std::cout << "gamma before division: " <<
   // cpp_amdm_gamma_image->GetPixel(pixelIndex) << std::endl;
+
+  std::string outputFileName;
+
+  if (fstoreMergingData) {
+    outputFileName =
+        sOutputFileNameBase + "-unprocessedForMergingOnly-delta.mhd";
+    // std::cout << "outputFileName: " << outputFileName << std::endl;
+    GateAMDMActor::write4DImage(cpp_amdm_delta_image, outputFileName);
+    outputFileName =
+        sOutputFileNameBase + "-unprocessedForMergingOnly-gamma.mhd";
+    // std::cout << "outputFileName: " << outputFileName << std::endl;
+    GateAMDMActor::write4DImage(cpp_amdm_gamma_image, outputFileName);
+  }
+
   cpp_amdm_gamma_image =
       GateAMDMActor::divide4dImage(cpp_amdm_gamma_image, cpp_amdm_delta_image);
   // std::cout << "gamma after division: " <<
@@ -455,34 +478,39 @@ void GateAMDMActor::EndSimulationAction() {
   // cpp_amdm_delta_image->GetPixel(pixelIndex) << std::endl; write images to
   // file
 
-  std::string outputFileName;
   // typedef itk::Image<float, 4> ImageType4D;
 
-  using WriterType = itk::ImageFileWriter<ImageType4D>;
-
-  auto writer = WriterType::New();
+  // using WriterType = itk::ImageFileWriter<ImageType4D>;
+  // auto writer = WriterType::New();
 
   outputFileName = sOutputFileNameBase + "-delta.mhd";
   // std::cout << "outputFileName: " << outputFileName << std::endl;
-
-  writer->SetFileName(outputFileName);
-  writer->SetInput(cpp_amdm_delta_image);
-  try {
-    writer->Update();
-  } catch (const itk::ExceptionObject &error) {
-    std::cerr << "Error: " << error << std::endl;
-    exit(EXIT_FAILURE);
-  }
+  GateAMDMActor::write4DImage(cpp_amdm_delta_image, outputFileName);
+  //     writer->SetFileName(outputFileName);
+  // writer->SetInput(cpp_amdm_delta_image);
+  // try
+  // {
+  //   writer->Update();
+  // }
+  // catch (const itk::ExceptionObject &error)
+  // {
+  //   std::cerr << "Error: " << error << std::endl;
+  //   exit(EXIT_FAILURE);
+  // }
 
   outputFileName = sOutputFileNameBase + "-gamma.mhd";
-  writer->SetFileName(outputFileName);
-  writer->SetInput(cpp_amdm_gamma_image);
-  try {
-    writer->Update();
-  } catch (const itk::ExceptionObject &error) {
-    std::cerr << "Error: " << error << std::endl;
-    exit(EXIT_FAILURE);
-  }
+  GateAMDMActor::write4DImage(cpp_amdm_gamma_image, outputFileName);
+  // writer->SetFileName(outputFileName);
+  // writer->SetInput(cpp_amdm_gamma_image);
+  // try
+  // {
+  //   writer->Update();
+  // }
+  // catch (const itk::ExceptionObject &error)
+  // {
+  //   std::cerr << "Error: " << error << std::endl;
+  //   exit(EXIT_FAILURE);
+  // }
 }
 
 std::string GateAMDMActor::remove_extension(const std::string &filename) {
@@ -490,4 +518,18 @@ std::string GateAMDMActor::remove_extension(const std::string &filename) {
   if (lastdot == std::string::npos)
     return filename;
   return filename.substr(0, lastdot);
+}
+
+void GateAMDMActor::write4DImage(const ImageType4D::Pointer image,
+                                 std::string filename) {
+  using WriterType = itk::ImageFileWriter<ImageType4D>;
+  auto writer = WriterType::New();
+  writer->SetFileName(filename);
+  writer->SetInput(image);
+  try {
+    writer->Update();
+  } catch (const itk::ExceptionObject &error) {
+    std::cerr << "Error: " << error << std::endl;
+    exit(EXIT_FAILURE);
+  }
 }
