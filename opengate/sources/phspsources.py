@@ -34,6 +34,7 @@ class PhaseSpaceSourceGenerator:
     def initialize(self, user_info):
         self.user_info = user_info
         self.read_phsp_and_keys()
+        self.checkIfKeysExist()
 
     def read_phsp_and_keys(self):
         # convert str like 1e5 to int
@@ -52,6 +53,7 @@ class PhaseSpaceSourceGenerator:
         # FIXME could have an option to select the branch
         self.root_file = uproot.open(self.user_info.phsp_file)
         branches = self.root_file.keys()
+        # if more than one branch, take the first one
         if len(branches) > 0:
             self.root_file = self.root_file[branches[0]]
         else:
@@ -103,6 +105,41 @@ class PhaseSpaceSourceGenerator:
                 f"We consider {n} instead (modulo)"
             )
         return n
+
+    def checkIfKeysExist(self):
+        """
+        Check if the keys are in the root file
+        """
+        user_info = self.user_info
+        keys = [
+            user_info.position_key_x,
+            user_info.position_key_y,
+            user_info.position_key_z,
+            user_info.direction_key_x,
+            user_info.direction_key_y,
+            user_info.direction_key_z,
+            user_info.energy_key,
+        ]
+        # add weight key if defined
+        if user_info.weight_key is not None and user_info.weight_key != "":
+            keys.append(user_info.weight_key)
+        # add PDGCode key if not particle name is defined
+        if user_info.particle == "" or user_info.particle is None:
+            keys.append(user_info.PDGCode_key)
+        # print("keys: ", keys)
+        # print("root file: ", self.root_file)
+        # in multi threading, not every thread reads the file
+        if self.root_file is None:
+            return True
+
+        # exit()
+        for key in keys:
+            if key not in self.root_file:
+                fatal(
+                    f"PhaseSpaceSource - checkIfKeysExist: no {key} key in the phsp file."
+                )
+                return False
+        return True
 
     def generate(self, source):
         """
@@ -164,17 +201,10 @@ class PhaseSpaceSourceGenerator:
                 f"restart from beginning. Cycle count = {self.cycle_count}"
             )
             self.current_index = 0
-
-        # prepare data
-
-        # set particle type
-        if ui.particle == "" or ui.particle is None:
-            # check if the keys for PDGCode are in the root file
-            if ui.PDGCode_key not in batch:
-                fatal(
-                    f"PhaseSpaceSource: no PDGCode key ({ui.PDGCode_key}) "
-                    f"in the phsp file and no source.particle"
-                )
+        # ###########################################################
+        # prepare data for batch for the cpp side
+        # batch is not sent as a whole, but each key is sent separately with source.SetKeyBatch
+        # ###########################################################
 
         # if translate_position is set to True, the position
         # supplied will be added to the phsp file position
@@ -182,14 +212,6 @@ class PhaseSpaceSourceGenerator:
             batch[ui.position_key_x] += float(ui.position.translation[0])
             batch[ui.position_key_y] += float(ui.position.translation[1])
             batch[ui.position_key_z] += float(ui.position.translation[2])
-
-        # source.SetPositionXBatch(batch[ui.position_key_x])
-        # source.SetPositionYBatch(batch[ui.position_key_y])
-        # source.SetPositionZBatch(batch[ui.position_key_z])
-        # else:
-        #     source.SetPositionXBatch(batch[ui.position_key_x])
-        #     source.SetPositionYBatch(batch[ui.position_key_y])
-        #     source.SetPositionZBatch(batch[ui.position_key_z])
 
         # direction is a rotation of the stored direction
         # if rotate_direction is set to True, the direction
@@ -218,8 +240,8 @@ class PhaseSpaceSourceGenerator:
         # source.SetDirectionYBatch(batch[ui.direction_key_y])
         # source.SetDirectionZBatch(batch[ui.direction_key_z])
 
-        # set weight
-        if ui.weight_key != "" or ui.weight_key is not None:
+        # set weight to batch
+        if ui.weight_key is not None and ui.weight_key != "":
             if ui.weight_key not in batch:
                 fatal(
                     f"PhaseSpaceSource: no Weight key ({ui.weight_key}) in the phsp file."
@@ -227,6 +249,29 @@ class PhaseSpaceSourceGenerator:
         else:
             self.w = np.ones(current_batch_size, dtype=np.float32)
             batch[ui.weight_key] = self.w.astype(np.float32)
+
+        # ### partice type is special, as it is read on the cpp side from the user_info.particle directly
+        # set particle type
+        if ui.particle == "" or ui.particle is None:
+            # no particle name defined, use the PDGCode from the phsp file
+            # check if the keys for PDGCode are in the root file
+            # if not existing, abort
+            if ui.PDGCode_key not in batch:
+                fatal(
+                    f"PhaseSpaceSource: no PDGCode key ({ui.PDGCode_key}) "
+                    f"in the phsp file and no user_info.particle name defined."
+                )
+        else:
+            # particle name is defined, PDGCode is not needed
+            # set PDGCode to 0 if not in the phsp file
+
+            # if ui.PDGCode_key not in batch:
+            #     fatal(
+            #         f"PhaseSpaceSource: no PDGCode key ({ui.PDGCode_key}) "
+            #         f"in the phsp file and no source.particle"
+            #     )
+            # set PDGCode to 0 if not in the phsp file
+            batch[ui.PDGCode_key] = np.zeros(current_batch_size, dtype=np.int32)
 
         # send to cpp
         # set position
@@ -359,11 +404,14 @@ class PhaseSpaceSource(SourceBase):
             # check if the source should generate particles until the second one
         # which is identified as primary by name, PDGCode and above a threshold
         if ui.generate_until_next_primary == True:
-            if ui.primary_PDGCode == 0:
+            if ui.primary_PDGCode == 0 or ui.primary_PDGCode is None:
                 gate.fatal(
                     f"PhaseSpaceSource: generate_until_next_primary is True but no primary particle is defined"
                 )
-            if ui.primary_lower_energy_threshold <= 0:
+            if (
+                ui.primary_lower_energy_threshold <= 0
+                or ui.primary_lower_energy_threshold is None
+            ):
                 gate.fatal(
                     f"PhaseSpaceSource: generate_until_next_primary is True but no primary_lower_energy_threshold is defined"
                 )
