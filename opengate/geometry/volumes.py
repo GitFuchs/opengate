@@ -13,6 +13,7 @@ from . import solids
 from ..utility import ensure_filename_is_str
 from ..exception import fatal, warning
 from ..image import update_image_py_to_cpp, write_itk_image
+from ..image import create_3d_image, update_image_py_to_cpp
 from .utility import (
     vec_np_as_g4,
     rot_np_as_g4,
@@ -657,6 +658,10 @@ class TubsVolume(RepeatableVolume, solids.TubsSolid):
     """Volume with a tube or cylindrical section shape."""
 
 
+class TesselatedVolume(RepeatableVolume, solids.TesselatedSolid):
+    """Volume based on a mesh volume by reading an STL file."""
+
+
 class RepeatParametrisedVolume(VolumeBase):
     """
     Volume created from another volume via translations.
@@ -1142,3 +1147,4 @@ process_cls(TrdVolume)
 process_cls(TubsVolume)
 process_cls(RepeatParametrisedVolume)
 process_cls(ImageVolume)
+process_cls(TesselatedVolume)

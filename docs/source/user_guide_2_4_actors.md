@@ -150,7 +150,7 @@ print(am.GetAvailableDigiAttributeNames())
         TrackVolumeName S
         Weight D
 
-Warning: KineticEnergy, Position and Direction are available for PreStep and for PostStep, and there is a "default" version corresponding to the legacy Gate.
+Warning: KineticEnergy, Position and Direction are available for PreStep and for PostStep, and there is a "default" version corresponding to the legacy Gate (9.X).
 
 | Pre version | Post version | default version         |
 |-------------|--------------|-------------------------|
@@ -158,10 +158,17 @@ Warning: KineticEnergy, Position and Direction are available for PreStep and for
 | PrePosition | PostPosition | Position (**Post**)     |
 | PreDirection | PostDirection | Direction (**Post**)    |
 
+Attributes correspondence with Gate 9.X for Hits and Singles:
+| Gate 9.X         | Gate 10         |
+|------------------|-----------------|
+| edep or energy | TotalEnergyDeposit
+| posX/Y/Z of globalPosX/Y/Z| PostPosition_X/Y/Z   |
+| time | GlobalTime |
 
-At the end of the simulation, the list of hits can be written as a root file and/or used by subsequent digitizer modules (see next sections). The Root output is optional, if the output name is `None` nothing will be written. Note that, like in Gate, every hit such with zero deposited energy is ignored. If you need them, you should probably use a PhaseSpaceActor. Several tests using `DigitizerHitsCollectionActor` are proposed: test025, test028, test035, etc.
 
-The two basics actors used to convert some `hits` to one `digi` are "DigitizerHitsAdderActor" and "DigitizerReadoutActor" described in the next sections and illustrated in the figure:
+At the end of the simulation, the list of hits can be written as a root file and/or used by subsequent digitizer modules (see next sections). The Root output is optional, if the output name is `None` nothing will be written. Note that, like in Gate, every hit with zero deposited energy is ignored. If you need them, you should probably use a PhaseSpaceActor. Several tests using `DigitizerHitsCollectionActor` are proposed: test025, test028, test035, etc.
+
+The two actors used to convert some `hits` to one `digi` are "DigitizerHitsAdderActor" and "DigitizerReadoutActor" described in the next sections and illustrated in the figure:
 
 ![](figures/digitizer_adder_readout.png)
 
@@ -255,6 +262,41 @@ ea.input_digi_collection = "Hits"
 ea.efficiency = 0.3
 ```
 A more detailed example can be found in [test 57](https://github.com/OpenGATE/opengate/blob/master/opengate/tests/src/test057_digit_efficiency.py).
+
+### Coincidences Sorter
+
+*Please, be aware that the current version of the Coincidence sorter is still work in progress. Coincidence sorter is only offline yet.*
+
+The Coincidence Sorter searches, into the singles list, for pairs of coincident singles. Whenever two or more singles are found within a coincidence time window, these singles are grouped to form a Coincidence event.
+
+As an example, a Coincidence Sorter is shown here:
+```python
+singles_tree = root_file["Singles_crystal"]
+...
+ns = gate.g4_units.nanosecond
+time_window = 3 * ns
+policy="keepAll"
+
+minSecDiff=1 #NOT YET IMPLEMENTED
+# apply coincidences sorter
+coincidences = coincidences_sorter(singles_tree, time_window, minSecDiff, policy, chunk_size=1000000)
+```
+As parameters Coincidence Sorter expects as input:
+
+* **Singles Tree**
+* Defined coincidence **time window**
+* **Minimum sector difference**  or minimal distance  between the detectors triggered the coincidence needed for removing geometrically impossible coincidences (Not yet implemented),
+* **Policy** to process the multiple coincidences. When more than two singles are found in coincidence, several types of behavior could be implemented.
+* **Chunk size** important for very large root files to avoid loading everything in memory.
+
+GATE allows to model so far 2 different **policy** rules that can be used in such a case:
+| Policy         |      Description                             |Equivalent in Gate 9.X|
+|----------------|----------------------------------------------|----------------------|
+| keepAll        | Each good pairs are considered               |  takeAllGoods        |
+| removeMultiples| No multiple coincidences are accepted, no matter how many good pairs are present |  killAll |
+
+
+A more detailed example can be found in [test 72](https://github.com/OpenGATE/opengate/blob/master/opengate/tests/src/test072_coinc_sorter_2keepAll.py).
 
 ### MotionVolumeActor
 

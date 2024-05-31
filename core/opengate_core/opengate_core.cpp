@@ -39,6 +39,11 @@ void init_G4IonisParamMat(py::module &);
 
 void init_G4MaterialPropertiesTable(py::module &);
 
+// surfaces
+
+void init_G4OpticalSurface(py::module &);
+void init_G4LogicalBorderSurface(py::module &);
+
 // run
 void init_G4RunManager(py::module &);
 
@@ -91,11 +96,32 @@ void init_G4Step(py::module &);
 void init_G4StepPoint(py::module &);
 
 // processes/electromagnetic/utils
+
 void init_G4EmParameters(py::module &);
+
+void init_G4PixeCrossSectionHandler(py::module &);
+
+void init_G4PixeShellDataSet(py::module &);
+
+void init_G4IInterpolator(py::module &);
+
+void init_G4LinInterpolator(py::module &);
+
+void init_G4DataVector(py::module &);
+
+// processes/hadronic/models/radioactive_decay
+
+void init_G4RadioactiveDecay(py::module &);
 
 // processes/cuts
 
 void init_G4VProcess(py::module &);
+
+void init_G4ProcessTable(py::module &);
+
+void init_G4ProcessVector(py::module &);
+
+void init_G4VRestDiscreteProcess(py::module &);
 
 void init_G4ProcessManager(py::module &);
 
@@ -112,6 +138,7 @@ void init_G4StepLimiter(py::module &);
 void init_G4UserSpecialCuts(py::module &);
 
 // geometry/management
+
 void init_G4VSolid(py::module &);
 
 void init_G4VPhysicalVolume(py::module &);
@@ -161,6 +188,14 @@ void init_G4UnionSolid(py::module &);
 
 void init_G4IntersectionSolid(py::module &);
 
+void init_G4VFacet(py::module &m);
+
+void init_G4TessellatedSolid(py::module &m);
+
+void init_G4TriangularFacet(py::module &m);
+
+void init_G4QuadrangularFacet(py::module &m);
+
 // geometry/volume
 void init_G4PVPlacement(py::module &);
 
@@ -198,6 +233,14 @@ void init_G4SingleParticleSource(py::module &);
 void init_G4ParticleTable(py::module &);
 
 void init_G4ParticleDefinition(py::module &);
+
+void init_G4Ions(py::module &);
+
+void init_G4IonTable(py::module &);
+
+void init_G4DecayTable(py::module &);
+
+void init_G4VDecayChannel(py::module &);
 
 // tracking
 void init_G4VSteppingVerbose(py::module &);
@@ -270,6 +313,8 @@ void init_GateRepeatParameterisation(py::module &);
 void init_GateSourceManager(py::module &);
 
 void init_GateGenericSource(py::module &);
+
+void init_GateTreatmentPlanPBSource(py::module &);
 
 void init_GateTemplateSource(py::module &);
 
@@ -389,6 +434,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4UserSteppingAction(m);
 
   init_G4VSolid(m);
+  init_G4VFacet(m);
   init_G4VPhysicalVolume(m);
   init_G4PVReplica(m);
   init_G4VVolumeMaterialScanner(m);
@@ -399,6 +445,9 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4LogicalVolumeStore(m);
   init_G4PhysicalVolumeStore(m);
   init_G4GeometryManager(m);
+
+  init_G4OpticalSurface(m);
+  init_G4LogicalBorderSurface(m);
 
   init_G4Region(m);
   init_G4RegionStore(m);
@@ -414,6 +463,9 @@ PYBIND11_MODULE(opengate_core, m) {
   init_G4SubtractionSolid(m);
   init_G4UnionSolid(m);
   init_G4IntersectionSolid(m);
+  init_G4TessellatedSolid(m);
+  init_G4TriangularFacet(m);
+  init_G4QuadrangularFacet(m);
 
   init_G4PVPlacement(m);
   init_G4TouchableHistory(m);
@@ -422,16 +474,27 @@ PYBIND11_MODULE(opengate_core, m) {
 
   init_G4PhysicsLists(m);
   init_G4EmParameters(m);
+  init_G4PixeCrossSectionHandler(m);
+  init_G4PixeShellDataSet(m);
+  init_G4IInterpolator(m);
+  init_G4LinInterpolator(m);
+  init_G4DataVector(m);
 
   init_G4VProcess(m);
   init_G4VBiasingOperator(m);
   init_G4ProcessManager(m);
+  init_G4ProcessTable(m);
+  init_G4ProcessVector(m);
+  init_G4VRestDiscreteProcess(m);
+
   init_G4ProductionCuts(m);
   init_G4ProductionCutsTable(m);
   init_G4UserLimits(m);
   init_G4StepLimiter(m);
   init_G4StepLimiterPhysics(m);
   init_G4UserSpecialCuts(m);
+
+  init_G4RadioactiveDecay(m); // must be after init_G4VRestDiscreteProcess
 
   init_G4VPrimaryGenerator(m);
   init_G4ParticleGun(m);
@@ -443,6 +506,10 @@ PYBIND11_MODULE(opengate_core, m) {
 
   init_G4ParticleTable(m);
   init_G4ParticleDefinition(m);
+  init_G4Ions(m);
+  init_G4IonTable(m);
+  init_G4DecayTable(m);
+  init_G4VDecayChannel(m);
 
   init_G4VPrimitiveScorer(m);
 
@@ -476,6 +543,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateVSource(m);
   init_GateSourceManager(m);
   init_GateGenericSource(m);
+  init_GateTreatmentPlanPBSource(m);
   init_GateTemplateSource(m);
   init_GatePencilBeamSource(m);
   init_GateVoxelsSource(m);
