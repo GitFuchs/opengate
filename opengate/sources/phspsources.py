@@ -1,4 +1,3 @@
-import threading
 import uproot
 import numpy as np
 import numbers
@@ -34,6 +33,7 @@ class PhaseSpaceSourceGenerator:
         self.lock = PhaseSpaceLock.lock
 
     def __getstate__(self):
+        ## FIXME
         self.lock = None
         return self.__dict__
 
@@ -229,8 +229,10 @@ class PhaseSpaceSourceGenerator:
         # source.SetDirectionZBatch(batch[ui.direction_key_z])
 
         # set weight
-        if ui.weight_key != "" or ui.weight_key is not None:
-            if ui.weight_key not in batch:
+        if ui.weight_key != "" and ui.weight_key is not None:
+            if ui.weight_key in batch:
+                source.SetWeightBatch(batch[ui.weight_key])
+            else:
                 fatal(
                     f"PhaseSpaceSource: no Weight key ({ui.weight_key}) in the phsp file."
                 )

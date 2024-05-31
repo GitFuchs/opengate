@@ -20,7 +20,8 @@
 
 namespace py = pybind11;
 
-class GateDoseActor : public GateVActor {
+class GateDoseActor : public GateVActor
+{
 
 public:
   // Constructor
@@ -52,7 +53,7 @@ public:
 
   // virtual void EndSimulationAction();
 
-  // Image type is 3D float by default
+  // Image type needs to be 3D double by default
   typedef itk::Image<double, 3> Image3DType;
 
   int sub2ind(Image3DType::IndexType index3D);
@@ -104,7 +105,8 @@ public:
   std::string fHitType;
 
 protected:
-  struct threadLocalT {
+  struct threadLocalT
+  {
     G4EmCalculator emcalc;
     std::vector<double> edep_worker_flatimg;
     std::vector<double> edepSquared_worker_flatimg;

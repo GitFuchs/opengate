@@ -160,7 +160,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
         # create itk image (py side)
         size = np.array(self.user_info.size)
         spacing = np.array(self.user_info.spacing)
-        self.py_edep_image = create_3d_image(size, spacing, "double")
+        self.py_edep_image = create_3d_image(size, spacing, pixel_type="double")
         # compute the center, using translation and half pixel spacing
         self.img_origin_during_run = (
             -size * spacing / 2.0 + spacing / 2.0 + self.user_info.translation
