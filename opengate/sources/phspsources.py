@@ -26,7 +26,6 @@ class PhaseSpaceSourceGenerator:
         self.batch = None
         self.points = None
         self.w = None
-        self.lock = PhaseSpaceLock.lock
 
     def __getstate__(self):
         ## FIXME
@@ -149,9 +148,6 @@ class PhaseSpaceSourceGenerator:
         Once created here, the particles are copied to cpp.
         (Yes maybe the copy could be avoided, but I did not manage to do it)
         """
-        # # Acquire the lock before executing the function
-        # print("threadID: ", opengate_core.G4GetThreadId(), "lockID:", id(self.lock))
-        # self.lock.acquire()
 
         # read data from root tree
         ui = self.user_info
@@ -381,18 +377,9 @@ class PhaseSpaceSource(SourceBase):
     def __init__(self, user_info):
         super().__init__(user_info)
         self.particle_generator = PhaseSpaceSourceGenerator()
-        # self.lock = threading.Lock()
-        # PhaseSpaceLock.lock = threading.Lock()  # Set the shared variable
-        # print(
-        #     "threadID: ",
-        #     opengate_core.G4GetThreadId(),
-        #     "lockID:",
-        #     id(PhaseSpaceLock.lock),
-        # )
 
     def initialize(self, run_timing_intervals):
         # initialize the mother class generic source
-        # self.lock = threading.Lock()
 
         SourceBase.initialize(self, run_timing_intervals)
 
