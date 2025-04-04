@@ -342,6 +342,8 @@ void init_GateSimulationStatisticsActor(py::module &);
 
 void init_GatePhaseSpaceActor(py::module &);
 
+void init_GateAMDMActor(py::module &);
+
 // biasing
 void init_GateBOptrBremSplittingActor(py::module &m);
 
@@ -600,6 +602,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateBeamQualityActor(m);
   init_GateEmCalculatorActor(m);
   init_GateSimulationStatisticsActor(m);
+  init_GateAMDMActor(m);
 
   init_GateBOptrBremSplittingActor(m);
   init_GateGammaFreeFlightOptrActor(m);

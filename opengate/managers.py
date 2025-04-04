@@ -87,6 +87,7 @@ from .actors.doseactors import (
     REActor,
     BeamQualityActor,
     EmCalculatorActor,
+    AMDMActor,
 )
 
 from .actors.dynamicactors import DynamicGeometryActor
@@ -134,6 +135,7 @@ actor_types = {
     "BeamQualityActor": BeamQualityActor,
     "EmCalculatorActor": EmCalculatorActor,
     "FluenceActor": FluenceActor,
+    "AMDMActor": AMDMActor,
     # misc
     "AttenuationImageActor": AttenuationImageActor,
     "SimulationStatisticsActor": SimulationStatisticsActor,

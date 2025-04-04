@@ -1737,6 +1737,117 @@ class EmCalculatorActor(ActorBase, g4.GateEmCalculatorActor):
         self.InitializeUserInfo(self.user_info)  # C++ side
         self.InitializeCpp()
 
+class AMDMActor(VoxelDepositActor,g4.GateAMDMActor):
+    """
+    AMDMActor: compute a 3D edep/dose map for deposited
+    energy/absorbed dose in the attached volume
+
+    The dose map is parameterized with:
+        - size (number of voxels)
+        - spacing (voxel size)
+        - translation (according to the coordinate system of the "attachedTo" volume)
+        - no rotation
+
+    Position:
+    - by default: centered according to the "attachedTo" volume center
+    - if the attachedTo volume is an Image AND the option "img_coord_system" is True:
+        the origin of the attachedTo image is used for the output dose.
+        Hence, the dose can be superimposed with the attachedTo volume
+
+    Options
+        - edep only for the moment
+        - later: add dose, uncertainty, squared etc
+
+    """
+      # hints for IDE
+    LUTfilename: str
+    AMDM_Bins: int
+    storeMergingData: bool
+
+
+    user_info_defaults = {
+        "LUTfilename": (
+            "AMDM_LUT.txt",
+            {"doc": "Path to the LUT file for AMDM, default is (AMDM_LUT.txt)"},
+        ),
+        "AMDM_Bins": (
+            int(10),
+            {
+                "doc": "Number of bins for the AMDM LUT, default is 10, has to agree with the bins in the LUT",
+            },
+        ),
+        "storeMergingData": (
+            False,
+            {
+                "doc": "If running on multiple threads, store data for proper merging",
+                "allowed_values": (True, False),
+            },
+        ),
+    }
+
+    user_output_config = {
+        "restrictedEdep": {
+            "actor_output_class": ActorOutputSingleImage,
+        },
+    }
+
+
+    def __init__(self, *args, **kwargs):
+        VoxelDepositActor.__init__(self, *args, **kwargs)
+        self.__initcpp__()
+
+
+    def __initcpp__(self):
+        g4.GateAMDMActor.__init__(self, self.user_info)
+        self.AddActions(
+            {
+                "BeginOfRunActionMasterThread",
+                "EndOfRunActionMasterThread",
+                "SteppingAction",
+            }
+        )
+
+
+    def initialize(self, *args):
+        """
+        At the start of the run, the image is centered according to the coordinate system of
+        the mother volume. This function computes the correct origin = center + translation.
+        Note that there is a half-pixel shift to align according to the center of the pixel,
+        like in ITK.
+        """
+        VoxelDepositActor.initialize(self)
+        self.check_user_input()
+        self.InitializeUserInfo(self.user_info)  # C++ side
+
+        # Set the physical volume name on the C++ side
+        self.SetPhysicalVolumeName(self.get_physical_volume_name())
+        self.InitializeCpp()
+
+    def BeginOfRunActionMasterThread(self, run_index):
+        print("AMDMActor: BeginOfRunActionMasterThread")
+        self.prepare_output_for_run("restrictedEdep", run_index)
+        self.push_to_cpp_image("restrictedEdep", run_index, self.cpp_fluence_image)
+        g4.GateFluenceActor.BeginOfRunActionMasterThread(self, run_index)
+
+
+    def EndOfRunActionMasterThread(self, run_index):
+        print("AMDMActor: EndOfRunActionMasterThread")
+        print(self.user_output.restrictedEdep)
+
+        self.fetch_from_cpp_image("restrictedEdep", run_index, self.cpp_fluence_image)
+        self._update_output_coordinate_system("restrictedEdep", run_index)
+        print("after fetch")
+        print(self.user_output.restrictedEdep)
+        self.user_output.restrictedEdep.store_meta_data(
+            run_index)
+
+        VoxelDepositActor.EndOfRunActionMasterThread(self, run_index)
+        return 0
+
+    def EndSimulationAction(self):
+        # print("AMDMActor: EndSimulationAction")
+        g4.GateAMDMActor.EndSimulationAction(self)
+        VoxelDepositActor.EndSimulationAction(self)
 
 process_cls(VoxelDepositActor)
 process_cls(DoseActor)
@@ -1748,3 +1859,4 @@ process_cls(BeamQualityActor)
 process_cls(FluenceActor)
 process_cls(ProductionAndStoppingActor)
 process_cls(EmCalculatorActor)
+process_cls(AMDMActor)
