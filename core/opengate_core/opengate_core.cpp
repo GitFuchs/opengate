@@ -318,6 +318,8 @@ void init_GateProductionAndStoppingActor(py::module &m);
 
 void init_GateBeamQualityActor(py::module &m);
 
+void init_GateAMFActor(py::module &m);
+
 void init_GateEmCalculatorActor(py::module &m);
 
 void init_GateARFActor(py::module &m);
@@ -608,6 +610,7 @@ PYBIND11_MODULE(opengate_core, m) {
   init_GateLETActor(m);
   init_GateProductionAndStoppingActor(m);
   init_GateBeamQualityActor(m);
+  init_GateAMFActor(m);
   init_GateEmCalculatorActor(m);
   init_GateSimulationStatisticsActor(m);
 
