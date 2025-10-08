@@ -12,25 +12,33 @@
 #include "G4EmCalculator.hh"
 #include "G4NistManager.hh"
 #include "G4VPrimitiveScorer.hh"
+#include "G4DataVector.hh"
+
 #include "GateHelpersImage.h"
-#include "GateWeightedEdepActor.h"
+#include "GateVActor.h"
+
 #include "itkImage.h"
+#include "itkImageFileWriter.h"
+
 #include <pybind11/stl.h>
 #include <cmath>
 
-#include "G4DataVector.hh"
 
 namespace py = pybind11;
 
 class GateAMFActor : public GateVActor {
 
 public:
+  // Image type is 4D float by default
+  typedef itk::Image<double, 3> Image3DType;
+  typedef itk::Image<double, 5> Image5DType;
+
   // Constructor
   GateAMFActor(py::dict &user_info);
   ~GateAMFActor();
   void BeginOfRunAction(const G4Run *);
   void SteppingAction(G4Step *step);
-  void EndOfEventAction(const G4Event *event);
+  // void EndOfEventAction(const G4Event *event);
 
   void InitializeUserInfo(py::dict &user_info) override;
 
@@ -42,6 +50,13 @@ public:
   double sedfunc(double x, double depev, const double Apara[], size_t size);
   void loadIonData();
 
+  std::string GetPhysicalVolumeName() const { return fPhysicalVolumeName; }
+
+  void InitializeCpp();
+  void SetPhysicalVolumeName(std::string s) { fPhysicalVolumeName = s; }
+  void GetVoxelPosition(G4Step *step, G4ThreeVector &position, bool &isInside,
+                        Image3DType::IndexType &index) const;
+
 
   // void EndSimulationAction();
 
@@ -52,9 +67,23 @@ public:
   std::map<G4int, std::vector<G4double>> totalSpectra; // Key: bin index, Value: spectra (vector of 180 values)
   std::map<G4int, G4double> cumulativeDose; 
 
+  //  The image is accessible on py side (shared by all threads)
+  Image3DType::Pointer cpp_amf_dose_image;
+  Image5DType::Pointer cpp_amf_microdosimetric_spectra;
+  Image3DType::Pointer cpp_amf_mean_lineal_energy;
+  Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy;
+
+
+  double fVoxelVolume{};
+  std::string fPhysicalVolumeName;
+  std::string fHitType;
+  int NbOfThreads = 0;
+  G4ThreeVector fImageSize;
+  G4ThreeVector fImageSpacing;
 
 
 
+  G4ThreeVector fTranslation;
 
 private:
   std::vector<double> yhig, yfy, ydy;

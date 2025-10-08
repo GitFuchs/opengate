@@ -45,6 +45,48 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
 
 }
 
+void GateAMFActor::InitializeCpp() {
+  GateVActor::InitializeCpp();
+  NbOfThreads = G4Threading::GetNumberOfRunningWorkerThreads();
+
+  // Create the image pointers
+  // (the size and allocation will be performed on the py side)
+
+    cpp_amf_dose_image = Image3DType::New();
+    cpp_amf_mean_lineal_energy = Image3DType::New();
+    cpp_amf_dose_averaged_lineal_energy = Image3DType::New();
+    cpp_amf_microdosimetric_spectra = Image5DType::New();
+
+  Image5DType::IndexType start;
+  start[0] = 0; // first index on X
+  start[1] = 0; // first index on Y
+  start[2] = 0; // first index on Z
+  start[3] = 0; // first index on T
+
+  Image5DType::SizeType size;
+  size[0] = fImageSize[0];          // size along X
+  size[1] = fImageSize[1];          // size along Y
+  size[2] = fImageSize[2];          // size along Z
+  size[3] = nybin; // size along T for microdosimetric spectra
+
+  Image5DType::SpacingType spacing;
+  spacing[0] = fImageSpacing[0]; // spacing along X
+  spacing[1] = fImageSpacing[1]; // spacing along Y
+  spacing[2] = fImageSpacing[2]; // spacing along Z
+  spacing[3] = 1;                // spacing along T
+
+  Image5DType::RegionType region;
+  region.SetSize(size);
+  region.SetIndex(start);
+
+  cpp_amf_microdosimetric_spectra->SetRegions(region);
+  cpp_amf_microdosimetric_spectra->SetSpacing(spacing);
+  cpp_amf_microdosimetric_spectra->Allocate();
+  cpp_amf_microdosimetric_spectra->FillBuffer(0.);
+
+
+}
+
 std::vector<std::pair<double, double>> GateAMFActor::calculateMicrodosimetricFunction(double izz, double iAA, double ene, double dEdx) {
     double unitconv, factor;
     double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
@@ -252,7 +294,7 @@ G4double GateAMFActor::getDose(G4Step *step) {
   auto *current_material = step->GetPreStepPoint()->GetMaterial();
   density = current_material->GetDensity();
       
-  dose = edep / density;
+  dose = edep / (density*fVoxelVolume); // in Gy (J/kg)
   return dose;
 }
 
@@ -265,22 +307,91 @@ G4double GateAMFActor::GetStoppingPower(G4Step *step) {
   auto* particle_definition = track->GetParticleDefinition();  // G4ParticleDefinition*
   auto* mat    = step->GetPreStepPoint()->GetMaterial();
 
-
   G4EmCalculator emcalc;
 
   auto total_dEdx = emcalc.ComputeTotalDEDX(kinEnergy, particle_definition, mat);              // MeV*cm2/g
   return total_dEdx;
 }
 
+void GateAMFActor::GetVoxelPosition(G4Step *step, G4ThreeVector &position,
+                                     bool &isInside,
+                                     Image3DType::IndexType &index) const {
+  auto preGlobal = step->GetPreStepPoint()->GetPosition();
+  auto postGlobal = step->GetPostStepPoint()->GetPosition();
+  auto touchable = step->GetPreStepPoint()->GetTouchable();
+
+  // consider random position between pre and post
+  if (fHitType == "pre") {
+    position = preGlobal;
+  }
+  if (fHitType == "random") {
+    auto x = G4UniformRand();
+    auto direction = postGlobal - preGlobal;
+    position = preGlobal + x * direction;
+  }
+  if (fHitType == "middle") {
+    auto direction = postGlobal - preGlobal;
+    position = preGlobal + 0.5 * direction;
+  }
+
+  auto localPosition =
+      touchable->GetHistory()->GetTransform(0).TransformPoint(position);
+
+  // convert G4ThreeVector to itk PointType
+  Image3DType::PointType point;
+  point[0] = localPosition[0];
+  point[1] = localPosition[1];
+  point[2] = localPosition[2];
+
+  isInside = cpp_amf_dose_image->TransformPhysicalPointToIndex(point, index);
+}
+
 
 
 void GateAMFActor::BeginOfRunAction(const G4Run *) {
 
+  std::cout << "AMF actor starting run BeginOfRunActionMasterThread"
+  << std::endl;
+  std::cout << "fPhysicalVolumeName: " << fPhysicalVolumeName << std::endl;
+  std::cout << "fInitialTranslation: " << fTranslation << std::endl;  
+
+      // Important ! The volume may have moved, so we re-attach each run
+  AttachImageToVolume<Image3DType>(cpp_amf_dose_image, fPhysicalVolumeName,
+                                   fTranslation);
+  AttachImageToVolume<Image3DType>(cpp_amf_mean_lineal_energy, fPhysicalVolumeName,
+                                   fTranslation);
+  AttachImageToVolume<Image3DType>(cpp_amf_dose_averaged_lineal_energy, fPhysicalVolumeName,
+                                   fTranslation);
+  AttachImageToVolume<Image5DType>(cpp_amf_microdosimetric_spectra, fPhysicalVolumeName,
+                                   fTranslation);
+
+
+
+  auto sp = cpp_amf_dose_image->GetSpacing();
+  fVoxelVolume = sp[0] * sp[1] * sp[2];
+  std::cout << "end of BeginOfRunActionMasterThread"
+  << std::endl;
 }
 
 void GateAMFActor::SteppingAction(G4Step *step) {
+  auto event_id =
+      G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
+  auto preGlobal = step->GetPreStepPoint()->GetPosition();
+  auto postGlobal = step->GetPostStepPoint()->GetPosition();
+  auto touchable = step->GetPreStepPoint()->GetTouchable();
+
 
   G4double dose = GateAMFActor::getDose(step);
+
+  // Get the voxel index
+  G4ThreeVector position;
+  bool isInside;
+  Image3DType::IndexType index;
+  GetVoxelPosition(step, position, isInside, index);
+
+    // If the position is not inside the image, return
+  if (!isInside)
+    return;
 
     if (dose > 0.) {
         G4double density = step->GetPreStepPoint()->GetMaterial()->GetDensity();
@@ -320,10 +431,4 @@ void GateAMFActor::SteppingAction(G4Step *step) {
         }
     }
     return ;
-}
-
-void GateAMFActor::EndOfEventAction(const G4Event *event) {
-  for (auto actor : fEndOfEventAction_actors) {
-    actor->EndOfEventAction(event);
-  }
 }
