@@ -1742,6 +1742,99 @@ class EmCalculatorActor(ActorBase, g4.GateEmCalculatorActor):
         self.InitializeCpp()
 
 
+
+class AMFActor(VoxelDepositActor, g4.GateAMFActor):
+    """
+    AMFActor: compute microdosimetric quantities
+    """
+    user_info_defaults = {
+     "tsed_file_name": (
+            "tsed.dat",
+            {
+                "doc": "File name for the TSED data.",
+            },),
+    "microdosimetric_spectra_file_name": (
+            "microdosimetric_spectra.dat",
+            {
+                "doc": "File name for the microdosimetric spectra data.",
+            },)
+    }
+
+    user_output_config = {
+        "dose": {
+            "actor_output_class": ActorOutputSingleImage,
+        },
+        "LinealEnergyDose": {
+            "actor_output_class": ActorOutputSingleImage,
+        },
+        "LinealEnergyS": {
+            "actor_output_class": ActorOutputSingleImage,
+        },
+    }
+
+    def __init__(self, *args, **kwargs):
+        VoxelDepositActor.__init__(self, *args, **kwargs)
+        self.__initcpp__()
+
+    def __initcpp__(self):
+        g4.GateAMFActor.__init__(self, self.user_info)
+        self.AddActions(
+            {
+                "BeginOfRunActionMasterThread",
+                "EndOfRunActionMasterThread",
+                "SteppingAction",
+            }
+        )
+
+    def initialize(self):
+        VoxelDepositActor.initialize(self)
+
+        self.check_user_input()
+
+        # no options yet
+        # if self.uncertainty or self.scatter:
+        #     fatal("FluenceActor : uncertainty and scatter not implemented yet")
+
+        self.InitializeUserInfo(self.user_info)
+        # Set the physical volume name on the C++ side
+        self.SetPhysicalVolumeName(self.get_physical_volume_name())
+        self.InitializeCpp()
+
+    def BeginOfRunActionMasterThread(self, run_index):
+        self.prepare_output_for_run("dose", run_index)
+        self.prepare_output_for_run("LinealEnergyDose", run_index)
+        self.prepare_output_for_run("LinealEnergyS", run_index)
+        self.push_to_cpp_image("dose", run_index, self.cpp_amf_dose_image)
+        self.push_to_cpp_image("LinealEnergyDose", run_index, self.cpp_amf_mean_lineal_energy)
+        self.push_to_cpp_image("LinealEnergyS", run_index, self.cpp_amf_dose_averaged_lineal_energy)
+
+        g4.GateAMFActor.BeginOfRunActionMasterThread(self, run_index)
+
+    def EndOfRunActionMasterThread(self, run_index):
+        self.fetch_from_cpp_image("dose", run_index, self.cpp_amf_dose_image)
+        self._update_output_coordinate_system("dose", run_index)
+
+        self.fetch_from_cpp_image("LinealEnergyDose", run_index, self.cpp_amf_mean_lineal_energy)
+        self._update_output_coordinate_system("LinealEnergyDose", run_index)
+
+        self.fetch_from_cpp_image("LinealEnergyS", run_index, self.cpp_amf_dose_averaged_lineal_energy)
+        self._update_output_coordinate_system("LinealEnergyS", run_index)
+
+
+        self.user_output.dose.store_meta_data(
+            run_index, number_of_samples=self.NbOfEvent
+        )
+
+
+
+        VoxelDepositActor.EndOfRunActionMasterThread(self, run_index)
+        return 0
+
+    def EndSimulationAction(self):
+        g4.GateAMFActor.EndSimulationAction(self)
+        VoxelDepositActor.EndSimulationAction(self)
+
+
 process_cls(VoxelDepositActor)
 process_cls(DoseActor)
 process_cls(TLEDoseActor)
@@ -1752,3 +1845,4 @@ process_cls(BeamQualityActor)
 process_cls(FluenceActor)
 process_cls(ProductionAndStoppingActor)
 process_cls(EmCalculatorActor)
+process_cls(AMFActor)
