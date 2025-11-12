@@ -178,34 +178,8 @@ GateAMFActor::VectorPixelType GateAMFActor::calculateDoseWeightedMicrodosimetric
     double erg = ene * iAA;
     double depev = std::min(dEdx * CelDiam * 1.0e3, erg * 1.0e6);
 
-    getAparaion(CelDiam, ene, iAA, izz, ratioc, ratioe, ratiop, ic1, ie1, ip1);
-    
-    // std::cout << "CelDiam: " << CelDiam << std::endl;
-    // std::cout << "ene: " << ene << std::endl;
-    // std::cout << "iAA: " << iAA << std::endl;
-    // std::cout << "izz: " << izz << std::endl;
-    // std::cout << "ratioc: " << ratioc << std::endl;
-    // std::cout << "ratioe: " << ratioe << std::endl;
-    // std::cout << "ratiop: " << ratiop << std::endl;
-    // std::cout << "ic1: " << ic1 << std::endl;
-    // std::cout << "ie1: " << ie1 << std::endl;
-    // std::cout << "ip1: " << ip1 << std::endl;
-
-    // std::cout << "Apara values before sedmean: ";
-    // for (int i = 0; i < mparased; ++i) {
-    //     std::cout << Apara[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // std::cout << "IonData matrix (" << IonData.size() << " x " << (IonData.empty() ? 0 : IonData[0].size()) << "):" << std::endl;
-    // for (size_t i = 0; i < IonData.size(); ++i) {
-    //     std::cout << "Row " << i << ": ";
-    //     for (size_t j = 0; j < IonData[i].size(); ++j) {
-    //         std::cout << IonData[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    
-    double temp=sedmean(1.0, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
+    getAparaion(CelDiam, ene, iAA, izz, ratioc, ratioe, ratiop, ic1, ie1, ip1);    
+    sedmean(1.0, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
     // std::cout << "Return value of sedmean: " << temp << std::endl;
     // std::cout << "Apara values after sedmean: ";
     // for (int i = 0; i < mparased; ++i) {
@@ -263,6 +237,7 @@ GateAMFActor::VectorPixelType GateAMFActor::calculateDoseWeightedMicrodosimetric
     // std::cout << "LinealEnergy_Dose: " << LinealEnergy_Dose << std::endl;
 
     double LinealEnergy_Freq = sum1 / sum0;
+    // std::cout << "LinealEnergy_Freq: " << LinealEnergy_Freq << std::endl;
     if (true) {
         
         // std::cout << "LinealEnergy_Dose: " << LinealEnergy_Dose << std::endl;
@@ -282,7 +257,10 @@ GateAMFActor::VectorPixelType GateAMFActor::calculateDoseWeightedMicrodosimetric
             sumNumerator += yfy[i] * Z[i];
             sumDenominator += yfy[i];
         }
-        double LinealEnergyS = 0.0;
+        // std::cout << "sumNumerator: " << sumNumerator << std::endl;
+        // std::cout << "sumDenominator: " << sumDenominator << std::endl;
+        // std::cout << "y0: " << y0 << std::endl;
+        LinealEnergyS = 0.0;
         if (sumDenominator > 0.0) {
             LinealEnergyS = ((sumNumerator / sumDenominator) / LinealEnergy_Freq ) * std::pow(y0, 2);
         }
@@ -557,7 +535,7 @@ void GateAMFActor::BeginOfRunAction(const G4Run *) {
 }
 
 void GateAMFActor::SteppingAction(G4Step *step) {
-     std::cout << "Begin of SteppingAction" << std::endl;
+    //  std::cout << "Begin of SteppingAction" << std::endl;
 
   auto event_id =
       G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
@@ -596,6 +574,7 @@ void GateAMFActor::SteppingAction(G4Step *step) {
             double LinealEnergy_Dose;
             double LinealEnergyS;
             auto microdosimetricSpectra = calculateDoseWeightedMicrodosimetricFunction(izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergyS);
+            std::cout << "outside: LinealEnergyS: " << LinealEnergyS << std::endl;
 
             // Set every 2nd value (i.e., index 1, 3, 5, ...) to zero, e.g. the indexes corresponding to the contents
             if (fRanOnce) {
@@ -620,11 +599,16 @@ void GateAMFActor::SteppingAction(G4Step *step) {
 
             
             // LinealEnergyS=12.2;
-            std::cout << "dEdx: " << dEdx << std::endl;
-            std::cout << "LinealEnergy_Dose: " << LinealEnergy_Dose << std::endl;
-            std::cout << "LinealEnergyS: " << LinealEnergyS << std::endl;
-            std::cout << "dose: " << dose << std::endl;
+            // std::cout << "dEdx: " << dEdx << std::endl;
+            // std::cout << "LinealEnergy_Dose: " << LinealEnergy_Dose << std::endl;
+            // std::cout << "LinealEnergyS: " << LinealEnergyS << std::endl;
+            // std::cout << "dose: " << dose << std::endl;
             // std::cout << "Voxel index: " << index << std::endl;
+            // if (LinealEnergyS>0){
+            //     std::cout << "LinealEnergyS: " << LinealEnergyS << std::endl;
+            //     std::cout << "Voxel index: " << index << std::endl;
+
+            // }
   
             ImageAddValue<Image3DType>(cpp_amf_dose_image, index, dose);
             ImageAddValue<Image3DType>(cpp_amf_dose_averaged_lineal_energy, index, LinealEnergyS);
@@ -682,13 +666,13 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
     {
     G4AutoLock mutex(&AMFMutex);
     writeVectorImage(cpp_amf_microdosimetric_spectra, fSpectraOutputFileName);
-    Image3DType::IndexType index;
-    index[0] = 0;
-    index[1] = 0;
-    index[2] = 0;
-    auto pixelValue = cpp_amf_microdosimetric_spectra->GetPixel(index);
-    std::cout << "Pixel value: " << pixelValue << std::endl;
-    std::cout << "cpp_amf_microdosimetric_spectra: " <<cpp_amf_microdosimetric_spectra->GetNumberOfComponentsPerPixel() << std::endl;
+    // Image3DType::IndexType index;
+    // index[0] = 0;
+    // index[1] = 0;
+    // index[2] = 0;
+    // auto pixelValue = cpp_amf_microdosimetric_spectra->GetPixel(index);
+    // std::cout << "Pixel value: " << pixelValue << std::endl;
+    // std::cout << "cpp_amf_microdosimetric_spectra: " <<cpp_amf_microdosimetric_spectra->GetNumberOfComponentsPerPixel() << std::endl;
 
 
     }
