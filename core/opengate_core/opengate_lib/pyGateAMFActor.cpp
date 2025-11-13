@@ -44,6 +44,12 @@ void init_GateAMFActor(py::module &m) {
       .def("GetPhysicalVolumeName", &GateAMFActor::GetPhysicalVolumeName)
       .def("SetPhysicalVolumeName", &GateAMFActor::SetPhysicalVolumeName)
       .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
+      .def("GetLinealEnergySpectraFlag", &GateAMFActor::GetLinealEnergySpectraFlag)
+      .def("SetLinealEnergySpectraFlag", &GateAMFActor::SetLinealEnergySpectraFlag)
+      .def("GetMeanLinealEnergyFlag", &GateAMFActor::GetMeanLinealEnergyFlag)
+      .def("SetMeanLinealEnergyFlag", &GateAMFActor::SetMeanLinealEnergyFlag)
+      .def("GetDoseAveragedLinealEnergyFlag", &GateAMFActor::GetDoseAveragedLinealEnergyFlag)
+      .def("SetDoseAveragedLinealEnergyFlag", &GateAMFActor::SetDoseAveragedLinealEnergyFlag)
        .def_readwrite("fPhysicalVolumeName",
        &GateAMFActor::fPhysicalVolumeName);
 }
