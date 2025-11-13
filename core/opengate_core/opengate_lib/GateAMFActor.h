@@ -234,15 +234,18 @@ public:
     void getAparaion(const double& CelDiam, const double& ene, const int& iAA, const int& izz,
                      double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1);
 
-    double sedmean(double x, double depev, int ic1, int ie1, int ip1,
+    inline double sedmean(double x, double depev, int ic1, int ie1, int ip1,
                    double ratioc, double ratioe, double ratiop, double Apara[]);
-    double sedfunc(double x, double depev, const double Apara[], size_t size);
+    inline double sedfunc(double x, double depev, const double Apara[], size_t size);
     void setTSEDfilename(const std::string& filename);
     void loadIonData();
     void setCalculationFlags(bool linealEnergySpectra, bool meanLinealEnergy, bool doseAveragedLinealEnergy) {
         flinealEnergySpectra = linealEnergySpectra;
         fmeanLinealEnergy = meanLinealEnergy;
         fdoseAveragedLinealEnergy = doseAveragedLinealEnergy;
+        // std::cout << "setCalculationFlags Calculation flags set - linealEnergySpectra: " << flinealEnergySpectra
+        //           << ", meanLinealEnergy: " << fmeanLinealEnergy
+        //           << ", doseAveragedLinealEnergy: " << fdoseAveragedLinealEnergy << std::endl;
     } 
 
 

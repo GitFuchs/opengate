@@ -1852,20 +1852,20 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
 
 
     def EndOfRunActionMasterThread(self, run_index):
-        print("Fetching AMFActor scored quantities from C++")
+        # print("Fetching AMFActor scored quantities from C++")
         self.fetch_from_cpp_image("dose", run_index, self.cpp_amf_dose_image)
         self._update_output_coordinate_system("dose", run_index)
-        print("Fetched dose image")
+        # print("Fetched dose image")
 
         if self.user_output.MeanLinealEnergy.get_active():
             self.fetch_from_cpp_image("MeanLinealEnergy", run_index, self.cpp_amf_mean_lineal_energy)
             self._update_output_coordinate_system("MeanLinealEnergy", run_index)
-            print("Fetched MeanLinealEnergy image")
+            # print("Fetched MeanLinealEnergy image")
 
         if self.user_output.DoseAveragedLinealEnergy.get_active():
             self.fetch_from_cpp_image("DoseAveragedLinealEnergy", run_index, self.cpp_amf_dose_averaged_lineal_energy)
             self._update_output_coordinate_system("DoseAveragedLinealEnergy", run_index)
-            print("Fetched DoseAveragedLinealEnergy image")
+            # print("Fetched DoseAveragedLinealEnergy image")
 
         self.user_output.dose.store_meta_data(
             run_index, number_of_samples=self.NbOfEvent

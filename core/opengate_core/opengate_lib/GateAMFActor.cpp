@@ -91,12 +91,22 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
                               fBetaRef, iunit, mparased);
     calculator->setTSEDfilename(fTSEDfilename);
 
-    calculator->setCalculationFlags(flinealEnergySpectra, fmeanLinealEnergy, fdoseAveragedLinealEnergy);
+    // calculator->setCalculationFlags(flinealEnergySpectra, fmeanLinealEnergy, fdoseAveragedLinealEnergy);
+    // std::cout << "InitializeUserInfo Calculation flags set - linealEnergySpectra: " << flinealEnergySpectra
+    //               << ", meanLinealEnergy: " << fmeanLinealEnergy
+    //               << ", doseAveragedLinealEnergy: " << fdoseAveragedLinealEnergy << std::endl;
 }
 
 void GateAMFActor::InitializeCpp() {
   GateVActor::InitializeCpp();
   NbOfThreads = G4Threading::GetNumberOfRunningWorkerThreads();
+
+  calculator->setCalculationFlags(flinealEnergySpectra, fmeanLinealEnergy, fdoseAveragedLinealEnergy);
+
+
+    // std::cout << "BeginOfRunActionMasterThread Calculation flags set - linealEnergySpectra: " << flinealEnergySpectra
+    //               << ", meanLinealEnergy: " << fmeanLinealEnergy
+    //               << ", doseAveragedLinealEnergy: " << fdoseAveragedLinealEnergy << std::endl;
 
   if (flinealEnergySpectra)
   {
@@ -156,7 +166,7 @@ void GateAMFActor::InitializeCpp() {
 
 //  std::cout << "AMF image size: " << size[0] << " " << size[1] << " " << size[2] << std::endl;
 //  std::cout << "AMF image spacing: " << spacing[0] << " " << spacing[1] << " " << spacing[2] << std::endl;
- std::cout << "End of InitializeCpp" << std::endl;
+//  std::cout << "End of InitializeCpp" << std::endl;
 }
 
 // void GateAMFActor::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double ene, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS) {
@@ -267,8 +277,8 @@ void GateAMFActor::GetVoxelPosition(G4Step *step, G4ThreeVector &position,
 
 void GateAMFActor::BeginOfRunAction(const G4Run *) {
 
-  std::cout << "AMF actor starting run BeginOfRunActionMasterThread"
-  << std::endl;
+//   std::cout << "AMF actor starting run BeginOfRunActionMasterThread"
+//   << std::endl;
     //   std::cout << "fPhysicalVolumeName: " << fPhysicalVolumeName << std::endl;
     //   std::cout << "fInitialTranslation: " << fTranslation << std::endl;  
 
@@ -295,8 +305,8 @@ void GateAMFActor::BeginOfRunAction(const G4Run *) {
   fVoxelVolume = sp[0] * sp[1] * sp[2];
 //   std::cout << "Voxel spacing: " << sp << " mm" << std::endl;
 //   std::cout << "Voxel volume: " << fVoxelVolume << " mm3" << std::endl;
-  std::cout << "end of BeginOfRunActionMasterThread"
-  << std::endl;
+//   std::cout << "end of BeginOfRunActionMasterThread"
+//   << std::endl;
 }
 
 void GateAMFActor::SteppingAction(G4Step *step) {
@@ -344,11 +354,6 @@ void GateAMFActor::SteppingAction(G4Step *step) {
                 calculator->calculateDoseWeightedMicrodosimetricFunction(microdosimetricSpectra, izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergyS);
             }
 
-            // calculateDoseWeightedMicrodosimetricFunction(microdosimetricSpectra, izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergyS);
-            // VectorPixelType microdosimetricSpectra;
-            //     microdosimetricSpectra.SetSize(nybin);
-            //     microdosimetricSpectra.Fill(0.0);
-
             
             // LinealEnergyS=12.2;
             // std::cout << "dEdx: " << dEdx << std::endl;
@@ -361,18 +366,22 @@ void GateAMFActor::SteppingAction(G4Step *step) {
             //     std::cout << "Voxel index: " << index << std::endl;
 
             // }
-  
-            if (flinealEnergySpectra){
-                ImageAddValue<ImageVectorType>(cpp_amf_microdosimetric_spectra, index, microdosimetricSpectra);
-            }
-            if (fdoseAveragedLinealEnergy){
-                ImageAddValue<Image3DType>(cpp_amf_dose_averaged_lineal_energy, index, LinealEnergyS);
+            // std::cout<<"LinealEnergyS: " << LinealEnergyS << "Dose averaged lineal energy: " << LinealEnergy_Dose << std::endl;
+            
+            {
+                G4AutoLock mutex(&AMFMutex);
+                if (flinealEnergySpectra){
+                    ImageAddValue<ImageVectorType>(cpp_amf_microdosimetric_spectra, index, microdosimetricSpectra);
+                }
+                if (fdoseAveragedLinealEnergy){
+                    ImageAddValue<Image3DType>(cpp_amf_dose_averaged_lineal_energy, index, LinealEnergyS);
 
-            }
-            if (fmeanLinealEnergy){
-                ImageAddValue<Image3DType>(cpp_amf_mean_lineal_energy, index, LinealEnergy_Dose);
-            }
-            ImageAddValue<Image3DType>(cpp_amf_dose_image, index, dose);
+                }
+                if (fmeanLinealEnergy){
+                    ImageAddValue<Image3DType>(cpp_amf_mean_lineal_energy, index, LinealEnergy_Dose);
+                }
+                ImageAddValue<Image3DType>(cpp_amf_dose_image, index, dose);
+            } // end of G4AutoLock
 
 
             // std::cout<<"Voxel index: " << index << std::endl;
@@ -392,8 +401,8 @@ void GateAMFActor::SteppingAction(G4Step *step) {
 
 int GateAMFActor::EndOfRunActionMasterThread(int run_id)
 {
-      std::cout << "begin of EndOfRunActionMasterThread"
-            << std::endl;
+    //   std::cout << "begin of EndOfRunActionMasterThread"
+    //         << std::endl;
     return 0;}
 
 //   std::cout << "AMF actor ending run BeginOfRunActionMasterThread"
@@ -421,7 +430,7 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
     //         << std::endl;
     // }
 
-    std::cout << "begin of EndOfRunAction" << std::endl;
+    // std::cout << "begin of EndOfRunAction" << std::endl;
     {
     G4AutoLock mutex(&AMFMutex);
     {
@@ -450,7 +459,7 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
 
 
     }
-    std::cout << "end of EndOfRunAction" << std::endl;
+    // std::cout << "end of EndOfRunAction" << std::endl;
 }
 
 void GateAMFActor::writeVectorImage(const ImageVectorType::Pointer image,
@@ -458,7 +467,7 @@ void GateAMFActor::writeVectorImage(const ImageVectorType::Pointer image,
 {
   using WriterType = itk::ImageFileWriter<ImageVectorType>;
   auto writer = WriterType::New();
-  std::cout << "Writing Vector image to " << filename << std::endl;
+//   std::cout << "Writing Vector image to " << filename << std::endl;
   writer->SetFileName(filename);
   writer->SetInput(image);
   try
@@ -576,16 +585,16 @@ void MicrodosimetricCalculator::get_Histo_X_Labels(std::vector<double>& labels) 
     labels = histo_x_labels;
 }
 
-void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double ene, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS) {
+void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double ene, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS) {   
     double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
 
     if (microDosSpectra.Size() != nybin) {
         microDosSpectra.SetSize(nybin);
-        microDosSpectra.Fill(0.0);
+        // microDosSpectra.Fill(0.0);
     }
-    else {
-        microDosSpectra.Fill(0.0);
-    }
+    // else {
+    //     microDosSpectra.Fill(0.0);
+    // }
     int ic1, ie1, ip1;
     double ratioc, ratioe, ratiop;
 
@@ -638,7 +647,6 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
             LinealEnergyS = ((sumNumerator / sumDenominator) / LinealEnergy_Freq ) * std::pow(y0, 2);
         }
     }
-
     return;
 }
 
@@ -646,7 +654,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
 void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double& ene, const int& iAA, const int& izz, double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1) {
     double erg = ene * iAA;
     int modifiedIzz = (izz > 26) ? 26 : izz;
-    double erg_AA = erg / iAA;
+    double erg_AA = ene;
     double CD = std::abs(CelDiam);
 
     int ic = 0;
@@ -691,7 +699,7 @@ void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double&
 }
 
 
-double MicrodosimetricCalculator::sedfunc(double x, double depev, const double Apara[], size_t size) {
+inline double MicrodosimetricCalculator::sedfunc(double x, double depev, const double Apara[], size_t size) {
     double getfirst = 0.0, getsecond = 0.0, getthird = 0.0;
 
     if (Apara[0] > 0.0) {
@@ -722,7 +730,7 @@ double MicrodosimetricCalculator::sedfunc(double x, double depev, const double A
     return sedfunc;
 }
 
-double MicrodosimetricCalculator::sedmean(double x, double depev, int ic1, int ie1, int ip1, double ratioc, double ratioe, double ratiop, double Apara[]) {
+inline double MicrodosimetricCalculator::sedmean(double x, double depev, int ic1, int ie1, int ip1, double ratioc, double ratioe, double ratiop, double Apara[]) {
     double sedmean = 0.0;
     double A9 = 0.0;
 
