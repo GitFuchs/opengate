@@ -62,7 +62,10 @@ public:
                                  std::string filename);
   void writeVectorToTextFile(const std::vector<double> &vec,
                                          const std::string &filename,
-                                         const std::string &header);                             
+                                         const std::string &header);    
+                                         
+  void divideVectorImageByScalarImage(const ImageVectorType::Pointer vectorImage,
+                                        const Image3DType::Pointer scalarImage);
 
   void InitializeCpp();
   void SetPhysicalVolumeName(std::string s) { fPhysicalVolumeName = s; }

@@ -199,6 +199,7 @@ G4double GateAMFActor::getDose(G4Step *step) {
 //   std::cout << "dose Gy unit: " << dose << " Gy" << std::endl;
 //   std::cout << "fVoxelVolume: " << fVoxelVolume << " (mm3)" << std::endl;
 //   std::cout << "dose int units" << step->GetTotalEnergyDeposit()/(current_material->GetDensity()*fVoxelVolume)<<std::endl;
+//   dose=step->GetTotalEnergyDeposit()/(current_material->GetDensity()*fVoxelVolume);
   return dose;
 }
 
@@ -320,11 +321,13 @@ void GateAMFActor::SteppingAction(G4Step *step) {
 
         // Calculate the step's mean kinetic energy
         G4double eKinPre = step->GetPreStepPoint()->GetKineticEnergy() / (MeV); 
+
         G4double eKinPost = step->GetPostStepPoint()->GetKineticEnergy() / (MeV);
         G4double eKinMean = (eKinPre + eKinPost) * 0.5; // in MeV
 
         G4double energyPerNucleon = eKinMean / iAA; // energy per nucleon
         G4double izz = step->GetTrack()->GetDefinition()->GetAtomicNumber();
+
 
 
         // izz=6;
@@ -335,9 +338,11 @@ void GateAMFActor::SteppingAction(G4Step *step) {
 
         if (izz >= 1 && izz <= 18 && energyPerNucleon >= 0.025) {
 
-            dEdx = GetStoppingPower(step) ;
+            dEdx = GetStoppingPower(step) ; // in keV/um
             LinealEnergy_Dose = 0.0;
             LinealEnergyS = 0.0;
+            // std::cout <<"Energy per nucleon: " << energyPerNucleon << " MeV/u" << ", Z: " << izz << ", A: " << iAA <<" dEdx: " << dEdx <<" dose: " << dose << std::endl;
+
             
             if (flinealEnergySpectra || fdoseAveragedLinealEnergy || fmeanLinealEnergy){ 
                 // std::cout << "Calculating microdosimetric spectra for Z=" << izz << ", A=" << iAA << ", E/A=" << energyPerNucleon << " MeV/u, dE/dx=" << dEdx << " keV/um" << std::endl;
@@ -451,6 +456,9 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
         if (flinealEnergySpectra){
             if (!fRanOnce) {
 
+                //divide cpp_amf_microdosimetric_spectra by dose
+                divideVectorImageByScalarImage(cpp_amf_microdosimetric_spectra, cpp_amf_dose_image);
+
                 writeVectorImage(cpp_amf_microdosimetric_spectra, fSpectraOutputFileName);
 
                 // Remove file extension from fSpectraOutputFileName
@@ -475,6 +483,35 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
 
     }
     // std::cout << "end of EndOfRunAction" << std::endl;
+}
+
+void GateAMFActor::divideVectorImageByScalarImage(const ImageVectorType::Pointer vectorImage,
+                                        const Image3DType::Pointer scalarImage)
+{
+    itk::ImageRegionIterator<ImageVectorType> vecIt(vectorImage, vectorImage->GetRequestedRegion());
+    itk::ImageRegionIterator<Image3DType> scalIt(scalarImage, scalarImage->GetRequestedRegion());
+
+    for (vecIt.GoToBegin(), scalIt.GoToBegin(); !vecIt.IsAtEnd() && !scalIt.IsAtEnd(); ++vecIt, ++scalIt)
+    {
+        ImageVectorType::PixelType vecPixel = vecIt.Get();
+        double scalPixel = scalIt.Get();
+
+        if (scalPixel != 0)
+        {
+            for (unsigned int i = 0; i < vecPixel.GetSize(); ++i)
+            {
+                vecPixel[i] /= scalPixel;
+            }
+            vecIt.Set(vecPixel);
+        }
+        else
+        {
+            // Handle division by zero if necessary
+            // For example, set the vector pixel to zero
+            vecPixel.Fill(0.0);
+            vecIt.Set(vecPixel);
+        }
+    }
 }
 
 void GateAMFActor::writeVectorImage(const ImageVectorType::Pointer image,
@@ -678,7 +715,8 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
 //    std::cout << "Apara[8]: " << Apara[8] << std::endl;
 
     double sumYdy = 0.0;
-
+    double zNumerator = 0.0;
+    double zDenominator = 0.0;
 
     for (size_t i = 0; i < nybin; ++i) {
 //         double ymid = (yhig[i] + yhig[i + 1]) / 2.0;
@@ -697,6 +735,10 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
         sum1 += yfy[i] * ywid[i];
         sum2 += yfy[i] * ywid[i] * ymid[i];
         sumYdy += ydy[i];   // for normalization
+        if (fdoseAveragedLinealEnergy) {
+            zNumerator   += yfy[i] * Z[i];
+            zDenominator += yfy[i];
+        }
 
         // std::cout << "ymid: "<<ymid<<" ydy[" << i << "] before normalization: " << ydy[i] << std::endl;
     }
@@ -730,22 +772,12 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
         LinealEnergy_Dose *= dose;
     }
     // yS calculation
-    if (fdoseAveragedLinealEnergy){
+    if (fdoseAveragedLinealEnergy && zDenominator > 0.0) {
         double LinealEnergy_Freq = sum1 / sum0;
-        
-        double sumNumerator = 0.0;
-        double sumDenominator = 0.0;
-
-        for (size_t i = 0; i < nybin; ++i) {
-            sumNumerator += yfy[i] * Z[i];
-            sumDenominator += yfy[i];
-        }
-        LinealEnergyS = 0.0;
-        if (sumDenominator > 0.0) {
-            LinealEnergyS = ((sumNumerator / sumDenominator) / LinealEnergy_Freq ) * std::pow(y0, 2);
-            LinealEnergyS *= dose;
-        }
+        LinealEnergyS = ((zNumerator / zDenominator) / LinealEnergy_Freq) * (y0 * y0);
+        LinealEnergyS *= dose;
     }
+
     return;
 }
 
