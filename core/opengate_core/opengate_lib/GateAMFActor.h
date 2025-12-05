@@ -105,8 +105,8 @@ public:
   G4ThreeVector fImageSpacing;
   double fdomainRadiusInUm;
   int NbOfEvent = 0;
-  double fNucleusRadius;
-  double fBetaRef;
+  // double fNucleusRadius;
+  // double fBetaRef;
   bool fRanOnce = false;
   std::vector<double> histo_x_labels;
   VectorPixelType microdosimetricSpectra;

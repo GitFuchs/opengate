@@ -74,14 +74,14 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
   std::cout << "fdomainRadiusInUm: "<< fdomainRadiusInUm <<std::endl;
 
     double CelDiam = 2.0 * fdomainRadiusInUm; // in um, fDomainRadiusInUm is in um
-    fNucleusRadius = 0.8 * fdomainRadiusInUm; // in um
-    fBetaRef = 0.5 * fdomainRadiusInUm; // in um
+    double nucleusRadius = 0.8 * fdomainRadiusInUm; // in um
+    double betaRef = 0.5 * fdomainRadiusInUm; // in um
 
     calculator = new MicrodosimetricCalculator(nybin,
                               CelDiam,
                               fdomainRadiusInUm,
-                              fNucleusRadius,
-                              fBetaRef, iunit, mparased);
+                              nucleusRadius,
+                              betaRef, iunit, mparased);
     calculator->setTSEDfilename(fTSEDfilename);
 
     
@@ -574,9 +574,13 @@ void MicrodosimetricCalculator::initialize() {
         double ymid_val = (yhig[i] + yhig[i + 1]) / 2.0;
         ymid[i] = ymid_val;
         ywid[i] = yhig[i + 1] - yhig[i];
-        eventmid[i] = ymid_val * factor * unitconv;
+        // eventmid[i] = ymid_val * factor * unitconv;
         Z[i] = 1 - std::exp(-std::pow(ymid_val, 2) / std::pow(y0, 2));
         histo_x_labels[i] = ymid_val;
+    // std::cout << "in initialize eventmid[" << i << "]: " << eventmid[i] << std::endl;
+	// std::cout << "unit conv: " << unitconv << std::endl;
+	// std::cout << "factor: " << factor << std::endl;
+	// std::cout << "ymid[" << i << "]: " << ymid[i] << std::endl;
     }
 
     // // Calculate the bins per decade
@@ -636,9 +640,9 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
     double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
     double Apara[mparased] = {0.0};
 
-    if (yhig.size() != nybin + 1) yhig.resize(nybin + 1);
-    if (yfy.size() != nybin) yfy.resize(nybin);
-    if (ydy.size() != nybin) ydy.resize(nybin); // Resize ydy
+    // if (yhig.size() != nybin + 1) yhig.resize(nybin + 1);
+    // if (yfy.size() != nybin) yfy.resize(nybin);
+    // if (ydy.size() != nybin) ydy.resize(nybin); // Resize ydy
 
     // in initialize
     // double ypower = -3.0;
@@ -673,22 +677,27 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
 //    std::cout << "factor: " << factor << std::endl;
 //    std::cout << "Apara[8]: " << Apara[8] << std::endl;
 
+    double sumYdy = 0.0;
+
+
     for (size_t i = 0; i < nybin; ++i) {
-        double ymid = (yhig[i] + yhig[i + 1]) / 2.0;
-//        std::cout << "ymid_bin: " << ymid << std::endl;
-        double ywid = yhig[i + 1] - yhig[i];
-        double eventmid = ymid * factor * unitconv;
-	// std::cout << "eventmid: " << eventmid << std::endl;
+//         double ymid = (yhig[i] + yhig[i + 1]) / 2.0;
+// //        std::cout << "ymid_bin: " << ymid << std::endl;
+//         double ywid = yhig[i + 1] - yhig[i];
+        double eventmid = ymid[i] * factor * unitconv;
+	// std::cout << "in calc eventmid[" << i << "]: "<< eventmid[i] << std::endl;
 	// std::cout << "unit conv: " << unitconv << std::endl;
 	// std::cout << "factor: " << factor << std::endl;
-	// std::cout << "ymid: " << ymid << std::endl;
+	// std::cout << "ymid[" << i << "]: " << ymid[i] << std::endl;
     // std::cout << "yfy calculation inputs - depev: " << depev << ", ic1: " << ic1 << ", ie1: " << ie1 << ", ip1: " << ip1 << ", ratioc: " << ratioc << ", ratioe: " << ratioe << ", ratiop: " << ratiop << std::endl;
-        yfy[i] = ymid * sedmean(eventmid, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
+        yfy[i] = ymid[i] * sedmean(eventmid, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
 //        std::cout << "yfy_bin: " << ydy[i] << std::endl;
-        ydy[i] = yfy[i] * ymid; // Calculate ydy
-        sum0 += yfy[i] * ywid / ymid;
-        sum1 += yfy[i] * ywid;
-        sum2 += yfy[i] * ywid * ymid;
+        ydy[i] = yfy[i] * ymid[i]; // Calculate ydy
+        sum0 += yfy[i] * ywid[i] / ymid[i];
+        sum1 += yfy[i] * ywid[i];
+        sum2 += yfy[i] * ywid[i] * ymid[i];
+        sumYdy += ydy[i];   // for normalization
+
         // std::cout << "ymid: "<<ymid<<" ydy[" << i << "] before normalization: " << ydy[i] << std::endl;
     }
 
@@ -697,7 +706,9 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
     // double binsperDecade = nybin / (std::log10(yhig.back() / yhig[0]));
     // std::cout << "Bins per decade: " << binsperDecade << std::endl;
 
-    double normalization_factor = (binsperDecade / std::log(10)) / std::accumulate(ydy.begin(), ydy.end(), 0.0);
+    double normalization_factor = (binsperDecade / std::log(10)) / sumYdy;
+
+    // double normalization_factor = (binsperDecade / std::log(10)) / std::accumulate(ydy.begin(), ydy.end(), 0.0);
     // std::cout << "Normalization factor: " << normalization_factor << std::endl;
     //    std::cout << "yF: " << sum1/sum0 << std::endl;
 //    std::cout << "yD: " << sum2/sum1 << std::endl;
