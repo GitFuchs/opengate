@@ -71,25 +71,30 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
   fTSEDfilename = DictGetStr(user_info, "tsed_file_name");
   std::cout << "fTSEDfilename: " << fTSEDfilename << std::endl;
 
+  std::cout << "fdomainRadiusInUm: "<< fdomainRadiusInUm <<std::endl;
 
-    // DomainRadius = fPm->GetDoubleParameter(GetFullParmName("DomainRadius"), "Length");
-    // DomainRadius
-    // G4cout << "DomainRadius: " << DomainRadius / um << " um" << G4endl;
-    // DomainRadius = DomainRadius / um;   // Convert DomainRadius from mm to um   
-    fDomainRadius = 0.3; // in um
-    double CelDiam = 2.0 * fDomainRadius;
-    fNucleusRadius = 0.8 * fDomainRadius; // in um
-    fBetaRef = 0.5 * fDomainRadius; // in um
-        // Perform unit conversions 
-    // DomainRadius = DomainRadius / um;   // Convert DomainRadius from mm to um 
-    // NucleusRadius = NucleusRadius / um; // Convert NucleusRadius from mm to um 
-    // BetaRef = BetaRef / (1. / (gray * gray)) ;             // Convert BetaRef to /Gy2
+    double CelDiam = 2.0 * fdomainRadiusInUm; // in um, fDomainRadiusInUm is in um
+    fNucleusRadius = 0.8 * fdomainRadiusInUm; // in um
+    fBetaRef = 0.5 * fdomainRadiusInUm; // in um
+
     calculator = new MicrodosimetricCalculator(nybin,
                               CelDiam,
-                              fDomainRadius,
+                              fdomainRadiusInUm,
                               fNucleusRadius,
                               fBetaRef, iunit, mparased);
     calculator->setTSEDfilename(fTSEDfilename);
+
+    
+    // std::cout << "InitializeUserInfo - Reinitializing MicrodosimetricCalculator with parameters:" << std::endl;
+    // std::cout << "  nybin: " << nybin << std::endl;
+    // std::cout << "  CelDiam: " << CelDiam << std::endl;
+    // std::cout << "  fdomainRadiusInUm: " << fdomainRadiusInUm << std::endl;
+    // std::cout << "  fNucleusRadius: " << fNucleusRadius << std::endl;
+    // std::cout << "  fBetaRef: " << fBetaRef << std::endl;
+    // std::cout << "  iunit: " << iunit << std::endl;
+    // std::cout << "  mparased: " << mparased << std::endl;
+    // calculator->reinitialize(nybin, CelDiam, fdomainRadiusInUm, 
+    //                 fNucleusRadius, fBetaRef, iunit, mparased);
 
     // calculator->setCalculationFlags(flinealEnergySpectra, fmeanLinealEnergy, fdoseAveragedLinealEnergy);
     // std::cout << "InitializeUserInfo Calculation flags set - linealEnergySpectra: " << flinealEnergySpectra
@@ -169,59 +174,31 @@ void GateAMFActor::InitializeCpp() {
 //  std::cout << "End of InitializeCpp" << std::endl;
 }
 
-// void GateAMFActor::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double ene, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS) {
-//     // This is now a wrapper that uses the optimized calculator
-//     // You should create a member variable MicrodosimetricCalculator* calculator in the class
-//     // and initialize it once in the constructor or InitializeCpp()
-    
-//     // For now, keeping original implementation as fallback
-//     // TODO: Replace with calculator->calculateDoseWeightedMicrodosimetricFunction(...)
-// }
-
-// void GateAMFActor::getBinValueAndContent(const VectorPixelType& vec, 
-//                                           size_t index, 
-//                                           double& binValue, 
-//                                           double& binContent) const {
-//     if (index >= vec.Size() / 2) {
-//         std::cerr << "Error: index out of range" << std::endl;
-//         binValue = 0.0;
-//         binContent = 0.0;
-//         return;
-//     }
-//     binValue = vec[2 * index];
-//     binContent = vec[2 * index + 1];
-// }
-
-// void GateAMFActor::setBinValueAndContent(VectorPixelType& vec, 
-//                                           size_t index, 
-//                                           double binValue, 
-//                                           double binContent) {
-//     if (index >= vec.Size() / 2) {
-//         std::cerr << "Error: index out of range" << std::endl;
-//         return;
-//     }
-//     vec[2 * index] = binValue;
-//     vec[2 * index + 1] = binContent;
-// }
-
-
-
-
-
 G4double GateAMFActor::getDose(G4Step *step) {
+//in Joule/kg = Gy
+//  std::cout << "Calculating dose..." << std::endl;
+    // joule and kg/mm3 are defined in G4SystemOfUnits.hh
   // get edep in MeV (take weight into account)
   auto w = step->GetTrack()->GetWeight();
 //   auto edep = step->GetTotalEnergyDeposit() / CLHEP::MeV * w;
   auto edep = step->GetTotalEnergyDeposit() / joule * w;
-
+//   std::cout << "edep default unit: " << step->GetTotalEnergyDeposit() << " default" << std::endl;  
+//   std::cout << "edep joule unit: " << step->GetTotalEnergyDeposit()/joule << " J" << std::endl;  
+//   std::cout << "edep joule MeV: " << step->GetTotalEnergyDeposit()/CLHEP::MeV << " J" << std::endl;  
   double dose;
   double density;
 
   auto *current_material = step->GetPreStepPoint()->GetMaterial();
   density = current_material->GetDensity()/(kg/mm3); // ensure density is in kg/mm3, by default in G4 it is in internal units
-//   std::cout<< "Material name: " << current_material->GetName() << std::endl;
+
+//   std::cout << "density default unit: " << current_material->GetDensity() << " default" << std::endl;  
+//   std::cout << "density kg/mm3 unit: " << current_material->GetDensity()/(kg/mm3) << " (kg/mm3)" << std::endl;  
+  //   std::cout<< "Material name: " << current_material->GetName() << std::endl;
 //   std::cout<< "Material formula: " << current_material->GetChemicalFormula() << std::endl;      
   dose = edep / (density*fVoxelVolume); // in Gy (J/kg)
+//   std::cout << "dose Gy unit: " << dose << " Gy" << std::endl;
+//   std::cout << "fVoxelVolume: " << fVoxelVolume << " (mm3)" << std::endl;
+//   std::cout << "dose int units" << step->GetTotalEnergyDeposit()/(current_material->GetDensity()*fVoxelVolume)<<std::endl;
   return dose;
 }
 
@@ -236,7 +213,7 @@ G4double GateAMFActor::GetStoppingPower(G4Step *step) {
 
   G4EmCalculator emcalc;
 
-  auto total_dEdx = emcalc.ComputeTotalDEDX(kinEnergy, particle_definition, mat);              // MeV*cm2/g
+  auto total_dEdx = emcalc.ComputeTotalDEDX(kinEnergy, particle_definition, mat) / (keV/um);              // keV/um
   return total_dEdx;
 }
 
@@ -295,10 +272,10 @@ void GateAMFActor::BeginOfRunAction(const G4Run *) {
                                     fTranslation);
     }
 
-        // Create the image pointers}
+        // Create the image pointers
       // Important ! The volume may have moved, so we re-attach each run
-  AttachImageToVolume<Image3DType>(cpp_amf_dose_image, fPhysicalVolumeName,
-                                   fTranslation);
+        AttachImageToVolume<Image3DType>(cpp_amf_dose_image, fPhysicalVolumeName,
+                                        fTranslation);
 
 
   auto sp = cpp_amf_dose_image->GetSpacing();
@@ -337,22 +314,54 @@ void GateAMFActor::SteppingAction(G4Step *step) {
     return;
 
     if (dose > 0.) {
-        G4double density = step->GetPreStepPoint()->GetMaterial()->GetDensity();
+        // G4double density = step->GetPreStepPoint()->GetMaterial()->GetDensity();
         G4double iAA = step->GetTrack()->GetDefinition()->GetAtomicMass();
-        G4double kenergy = step->GetPreStepPoint()->GetKineticEnergy();
-        G4double energyPerNucleon = kenergy / iAA; // energy per nucleon
+        // G4double kenergy = step->GetPreStepPoint()->GetKineticEnergy();
+
+        // Calculate the step's mean kinetic energy
+        G4double eKinPre = step->GetPreStepPoint()->GetKineticEnergy() / (MeV); 
+        G4double eKinPost = step->GetPostStepPoint()->GetKineticEnergy() / (MeV);
+        G4double eKinMean = (eKinPre + eKinPost) * 0.5; // in MeV
+
+        G4double energyPerNucleon = eKinMean / iAA; // energy per nucleon
         G4double izz = step->GetTrack()->GetDefinition()->GetAtomicNumber();
 
-        if (izz >= 1 && izz <= 18 && energyPerNucleon >= 0.025) {
-            // G4int G4binIndex = GetIndex(step);
 
-            dEdx = GetStoppingPower(step);
+        // izz=6;
+        // iAA=12;
+        // energyPerNucleon=100.0;
+        // dEdx=10.0;
+        // dose=1.0;
+
+        if (izz >= 1 && izz <= 18 && energyPerNucleon >= 0.025) {
+
+            dEdx = GetStoppingPower(step) ;
             LinealEnergy_Dose = 0.0;
             LinealEnergyS = 0.0;
             
             if (flinealEnergySpectra || fdoseAveragedLinealEnergy || fmeanLinealEnergy){ 
+                // std::cout << "Calculating microdosimetric spectra for Z=" << izz << ", A=" << iAA << ", E/A=" << energyPerNucleon << " MeV/u, dE/dx=" << dEdx << " keV/um" << std::endl;
+                // std::cout << "Dose: " << dose << " Gy" << std::endl;
                 calculator->calculateDoseWeightedMicrodosimetricFunction(microdosimetricSpectra, izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergyS);
+                                    // Debug: print microdosimetric spectra content
+                // for (size_t i = 0; i < microdosimetricSpectra.Size(); ++i) {
+                //     std::cout << "microdosimetricSpectra[" << i << "] = " << microdosimetricSpectra[i] << std::endl;
+                // }
+                // Write microdosimetricSpectra to text file
+                // calculator->get_Histo_X_Labels(histo_x_labels);
+                // {
+                //     std::ofstream spectraFile("microdosimetric_spectra_dump.txt", std::ios::app);
+                //     if (spectraFile.is_open()) {
+                //         for (size_t i = 0; i < microdosimetricSpectra.Size(); ++i) {
+                //             spectraFile << histo_x_labels[i] << "\t" << microdosimetricSpectra[i] << std::endl;
+                //         }
+                //         spectraFile.close();
+                //     }
+                // }
             }
+
+
+
 
             
             // LinealEnergyS=12.2;
@@ -381,6 +390,7 @@ void GateAMFActor::SteppingAction(G4Step *step) {
                     ImageAddValue<Image3DType>(cpp_amf_mean_lineal_energy, index, LinealEnergy_Dose);
                 }
                 ImageAddValue<Image3DType>(cpp_amf_dose_image, index, dose);
+
             } // end of G4AutoLock
 
 
@@ -389,6 +399,10 @@ void GateAMFActor::SteppingAction(G4Step *step) {
             // auto pixelValue = cpp_amf_microdosimetric_spectra->GetPixel(index);
             // std::cout << "Pixel value: " << pixelValue << std::endl;
             // std::cout << "End of SteppingAction" << std::endl;
+
+
+            // writeVectorImage(cpp_amf_microdosimetric_spectra, fSpectraOutputFileName);
+            // exit(0);
 
             return ;
         }
@@ -442,6 +456,7 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
                 // Remove file extension from fSpectraOutputFileName
                 namespace fs = std::filesystem;
                 fs::path p(fSpectraOutputFileName);
+                calculator->get_Histo_X_Labels(histo_x_labels);
                 std::string baseFilename = (p.parent_path() / p.stem()).string();
                 std::string histo_x_labels_filename = baseFilename + "_histo_x_labels.txt";
                 writeVectorToTextFile(histo_x_labels, histo_x_labels_filename, "#Histogram x-axis labels (lineal energy in keV/um)");
@@ -512,33 +527,32 @@ G4bool GateAMFActor::IsMaster() const {
   
 
 // New optimized class for microdosimetric calculations
-// Public reinitialization function if parameters need to be updated
-void MicrodosimetricCalculator::reinitialize(size_t nybin_val, double celDiam, double domainRadius, 
-                    double nucleusRadius, double betaRef, int iunit_val, int mparased_val) {
-    nybin = nybin_val;
-    CelDiam = celDiam;
-    fDomainRadius = domainRadius;
-    fNucleusRadius = nucleusRadius;
-    fBetaRef = betaRef;
-    iunit = iunit_val;
-    mparased = mparased_val;
-    initialize();
-}
+// // Public reinitialization function if parameters need to be updated
+// void MicrodosimetricCalculator::reinitialize(size_t nybin_val, double celDiam, double domainRadius, 
+//                     double nucleusRadius, double betaRef, int iunit_val, int mparased_val) {
+//     nybin = nybin_val;
+//     CelDiam = celDiam;
+//     fDomainRadius = domainRadius;
+//     fNucleusRadius = nucleusRadius;
+//     fBetaRef = betaRef;
+//     iunit = iunit_val;
+//     mparased = mparased_val;
+//     initialize();
+// }
 
 void MicrodosimetricCalculator::initialize() {
     ypower = -3.0;  // Initialize here instead
-    
-    std::fill(Apara, Apara + 9, 0.0);
 
-    yhig.resize(nybin + 1);
-    yfy.resize(nybin);
-    ydy.resize(nybin);
+    if (yhig.size() != nybin + 1) yhig.resize(nybin + 1);
+    if (yfy.size() != nybin) yfy.resize(nybin);
+    if (ydy.size() != nybin) ydy.resize(nybin); // Resize ydy
 
-    ymid.resize(nybin);
-    ywid.resize(nybin);
-    eventmid.resize(nybin);
-    Z.resize(nybin);
-    histo_x_labels.resize(nybin);
+    if (ymid.size() != nybin) ymid.resize(nybin);
+    if (ywid.size() != nybin) ywid.resize(nybin);
+    if (eventmid.size() != nybin) eventmid.resize(nybin);
+    if (Z.size() != nybin) Z.resize(nybin);
+    if (histo_x_labels.size() != nybin) histo_x_labels.resize(nybin);
+
 
     for (size_t i = 0; i < yhig.size(); ++i) {
         yhig[i] = std::pow(10.0, ypower);
@@ -553,7 +567,7 @@ void MicrodosimetricCalculator::initialize() {
         unitconv = 4.0 / 3.0 * M_PI * std::pow(CelDiam / 2.0, 3) * 1.0e-15 / 1.602e-13;
     }
 
-    // Calculate y0 first as it's needed in the loop
+    // // Calculate y0
     y0 = (M_PI * fDomainRadius * std::pow(fNucleusRadius, 2)) / (std::sqrt(fBetaRef * (std::pow(fDomainRadius, 2) + std::pow(fNucleusRadius, 2))) * 0.16022);
 
     for (size_t i = 0; i < nybin; ++i) {
@@ -565,7 +579,7 @@ void MicrodosimetricCalculator::initialize() {
         histo_x_labels[i] = ymid_val;
     }
 
-    // Calculate the bins per decade
+    // // Calculate the bins per decade
     binsperDecade = nybin / (std::log10(yhig.back() / yhig[0]));
 }
 
@@ -577,6 +591,14 @@ void MicrodosimetricCalculator::initialize() {
           fNucleusRadius(nucleusRadius), fBetaRef(betaRef), iunit(iunit_val), mparased(mparased_val),
           factor(0.0), unitconv(0.0), binsperDecade(0.0), y0(0.0), ypower(-3.0) {
         initialize();
+        std::cout << "MicrodosimetricCalculator Constructor - Parameters:" << std::endl;
+        std::cout << "  nybin: " << nybin << std::endl;
+        std::cout << "  CelDiam: " << CelDiam << std::endl;
+        std::cout << "  fDomainRadius: " << fDomainRadius << std::endl;
+        std::cout << "  fNucleusRadius: " << fNucleusRadius << std::endl;
+        std::cout << "  fBetaRef: " << fBetaRef << std::endl;
+        std::cout << "  iunit: " << iunit << std::endl;
+        std::cout << "  mparased: " << mparased << std::endl;
     }
 
 
@@ -585,44 +607,108 @@ void MicrodosimetricCalculator::get_Histo_X_Labels(std::vector<double>& labels) 
     labels = histo_x_labels;
 }
 
-void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double ene, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS) {   
-    double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
 
+void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra, double izz, double iAA, double energyPerNucleon, double dEdx, double dose, double& LinealEnergy_Dose, double& LinealEnergyS)
+{
     if (microDosSpectra.Size() != nybin) {
         microDosSpectra.SetSize(nybin);
-        // microDosSpectra.Fill(0.0);
+        microDosSpectra.Fill(0.0);
     }
-    // else {
-    //     microDosSpectra.Fill(0.0);
+
+    // std::cout << "calculateDoseWeightedMicrodosimetricFunction inputs:" << std::endl;
+    // std::cout << "  izz: " << izz << std::endl;
+    // std::cout << "  iAA: " << iAA << std::endl;
+    // std::cout << "  energyPerNucleon: " << energyPerNucleon << std::endl;
+    // std::cout << "  dEdx: " << dEdx << std::endl;
+    // std::cout << "  dose: " << dose << std::endl;
+    // std::cout << "  microDosSpectra.Size(): " << microDosSpectra.Size() << std::endl;
+    // std::cout << "  nybin: " << nybin << std::endl;
+    // std::cout << "  CelDiam: " << CelDiam << std::endl;
+    // std::cout << "  fDomainRadius: " << DomainRadius << std::endl;
+    // std::cout << "  iunit: " << iunit << std::endl;
+    // std::cout << "  mparased: " << mparased << std::endl;
+
+    // microDosSpectra.SetSize(nybin);
+    // microDosSpectra.Fill(0.0);
+
+    // double unitconv;
+    double factor;
+    double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
+    double Apara[mparased] = {0.0};
+
+    if (yhig.size() != nybin + 1) yhig.resize(nybin + 1);
+    if (yfy.size() != nybin) yfy.resize(nybin);
+    if (ydy.size() != nybin) ydy.resize(nybin); // Resize ydy
+
+    // in initialize
+    // double ypower = -3.0;
+    // const double ystep = 0.02;	
+    // for (size_t i = 0; i < yhig.size(); ++i) {
+    // 	yhig[i] = std::pow(10.0, ypower);
+    // 	ypower += ystep;
     // }
+  
+    // if (iunit <= 1) {
+    //     unitconv = 1.0;
+    // } else if (iunit == 2) {
+    //     unitconv = 1.0e-3 * (2.0 / 3.0 * CelDiam);
+    // } else if (iunit == 3) {
+    //     unitconv = 4.0 / 3.0 * M_PI * std::pow(CelDiam / 2.0, 3) * 1.0e-15 / 1.602e-13;
+    // }
+
     int ic1, ie1, ip1;
     double ratioc, ratioe, ratiop;
-
-    double erg = ene * iAA;
+    double erg = energyPerNucleon * iAA;
+    // std::cout << "dEdx: " << dEdx << " CelDiam: " << CelDiam<<" erg: " << erg << std::endl;
     double depev = std::min(dEdx * CelDiam * 1.0e3, erg * 1.0e6);
+    // std::cout << "depev: " << depev << std::endl;
 
-    getAparaion(CelDiam, ene, iAA, izz, ratioc, ratioe, ratiop, ic1, ie1, ip1);    
-    sedmean(1.0, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
+    getAparaion(CelDiam, energyPerNucleon, iAA, izz, ratioc, ratioe, ratiop, ic1, ie1, ip1);
+    // std::cout << "getAparaion inputs - CelDiam: " << CelDiam << ", energyPerNucleon: " << energyPerNucleon << ", iAA: " << iAA << ", izz: " << izz << std::endl;
     
+    sedmean(1.0, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
+    // std::cout << "sedmean inputs - x: 1.0, depev: " << depev << ", ic1: " << ic1 << ", ie1: " << ie1 << ", ip1: " << ip1 << ", ratioc: " << ratioc << ", ratioe: " << ratioe << ", ratiop: " << ratiop << std::endl;
     factor = (iunit == 0) ? 1.0 : 1.0e6 / Apara[8];
+//    double tmp = sedmean(1.0, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop);
+//    std::cout << "factor: " << factor << std::endl;
+//    std::cout << "Apara[8]: " << Apara[8] << std::endl;
+
     for (size_t i = 0; i < nybin; ++i) {
-        yfy[i] = ymid[i] * sedmean(eventmid[i], depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
-        ydy[i] = yfy[i] * ymid[i];
-        sum0 += yfy[i] * ywid[i] / ymid[i];
-        sum1 += yfy[i] * ywid[i];
-        sum2 += yfy[i] * ywid[i] * ymid[i];
+        double ymid = (yhig[i] + yhig[i + 1]) / 2.0;
+//        std::cout << "ymid_bin: " << ymid << std::endl;
+        double ywid = yhig[i + 1] - yhig[i];
+        double eventmid = ymid * factor * unitconv;
+	// std::cout << "eventmid: " << eventmid << std::endl;
+	// std::cout << "unit conv: " << unitconv << std::endl;
+	// std::cout << "factor: " << factor << std::endl;
+	// std::cout << "ymid: " << ymid << std::endl;
+    // std::cout << "yfy calculation inputs - depev: " << depev << ", ic1: " << ic1 << ", ie1: " << ie1 << ", ip1: " << ip1 << ", ratioc: " << ratioc << ", ratioe: " << ratioe << ", ratiop: " << ratiop << std::endl;
+        yfy[i] = ymid * sedmean(eventmid, depev, ic1, ie1, ip1, ratioc, ratioe, ratiop, Apara);
+//        std::cout << "yfy_bin: " << ydy[i] << std::endl;
+        ydy[i] = yfy[i] * ymid; // Calculate ydy
+        sum0 += yfy[i] * ywid / ymid;
+        sum1 += yfy[i] * ywid;
+        sum2 += yfy[i] * ywid * ymid;
+        // std::cout << "ymid: "<<ymid<<" ydy[" << i << "] before normalization: " << ydy[i] << std::endl;
     }
 
+    // in initialize
+    // Calculate the bins per decade and normalization factor
+    // double binsperDecade = nybin / (std::log10(yhig.back() / yhig[0]));
+    // std::cout << "Bins per decade: " << binsperDecade << std::endl;
 
-    if (flinealEnergySpectra){
-        double normalization_factor = (binsperDecade / std::log(10)) / std::accumulate(ydy.begin(), ydy.end(), 0.0);
+    double normalization_factor = (binsperDecade / std::log(10)) / std::accumulate(ydy.begin(), ydy.end(), 0.0);
+    // std::cout << "Normalization factor: " << normalization_factor << std::endl;
+    //    std::cout << "yF: " << sum1/sum0 << std::endl;
+//    std::cout << "yD: " << sum2/sum1 << std::endl;
 
-        for (size_t i = 0; i < ydy.size(); ++i) {
-            ydy[i] *= normalization_factor;
-            microDosSpectra[i] = ydy[i]*dose;
-        }
+
+    for (size_t i = 0; i < ydy.size(); ++i) {
+        ydy[i] *= normalization_factor;
+        microDosSpectra[i] = ydy[i]*dose;
     }
 
+    // yD calculation
     if (fmeanLinealEnergy){
         if (sum1 == 0) {
             std::cout << "Warning: sum1 is zero, returning zero vector." << std::endl;
@@ -630,8 +716,9 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
             return;
         }
         LinealEnergy_Dose = sum2/sum1;
+        LinealEnergy_Dose *= dose;
     }
-
+    // yS calculation
     if (fdoseAveragedLinealEnergy){
         double LinealEnergy_Freq = sum1 / sum0;
         
@@ -645,19 +732,18 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
         LinealEnergyS = 0.0;
         if (sumDenominator > 0.0) {
             LinealEnergyS = ((sumNumerator / sumDenominator) / LinealEnergy_Freq ) * std::pow(y0, 2);
+            LinealEnergyS *= dose;
         }
     }
     return;
 }
 
 
-void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double& ene, const int& iAA, const int& izz, double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1) {
-    double erg = ene * iAA;
-    int modifiedIzz = (izz > 26) ? 26 : izz;
-    double erg_AA = ene;
-    double CD = std::abs(CelDiam);
 
+void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double& energyPerNucleon, const int& iAA, const int& izz, double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1) {
+    double CD = std::abs(CelDiam);
     int ic = 0;
+
     for (ic = 1; ic <= 9; ++ic) {
         if (cdiamion[ic - 1] >= CD) {
             break;
@@ -674,7 +760,7 @@ void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double&
 
     int ie = 0;
     for (ie = 1; ie <= 12; ++ie) {
-        if (eincion[ie-1] >= erg_AA) {
+        if (eincion[ie-1] >= energyPerNucleon) {
             break;
         }
     }
@@ -684,7 +770,7 @@ void MicrodosimetricCalculator::getAparaion(const double& CelDiam, const double&
         ratioe = 0.0;
     } else {
         ie1 = ie - 1;
-        ratioe = std::min(1.0, (std::log10(erg_AA) - std::log10(eincion[ie1-1])) / (std::log10(eincion[ie1]) - std::log10(eincion[ie1-1])));
+        ratioe = std::min(1.0, (std::log10(energyPerNucleon) - std::log10(eincion[ie1-1])) / (std::log10(eincion[ie1]) - std::log10(eincion[ie1-1])));
     }
 
     int ip = 1;
@@ -743,16 +829,17 @@ inline double MicrodosimetricCalculator::sedmean(double x, double depev, int ic1
                 int index = ((ip-1) * 96) + ((ie-1) * 8) + (ic-1);
                 for (int i = 0; i < mparased; i++) {
                     Apara[i] = IonData[index][i];
+ //                   std::cout << "ip1: "<< ip1 <<", ic1: " << ic1 <<", ie1: " << ie1 << std::endl;
                 }
                 double wei = Rp * Re * Rc;
                 double sedfuncResult = sedfunc(x, depev, Apara, mparased);
                 sedmean += sedfuncResult * wei;
                 A9 += Apara[8] * wei;
             }
-        }
+        } 
     }
-
     Apara[8] = A9;
+//    std::cout << "Apara0: " <<Apara[0] << ", Apara8: " << Apara[8] << std::endl;
     return sedmean;
 }
 
@@ -787,9 +874,3 @@ void MicrodosimetricCalculator::loadIonData() {
 
     file.close();
 }
-
-
-
-
-
-

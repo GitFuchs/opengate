@@ -36,10 +36,6 @@ class GateAMFActor : public GateVActor {
 public:
   // Image type is 4D float by default
   typedef itk::Image<double, 3> Image3DType;
-
-  // typedef itk::VariableLengthVector<double> VectorPixelType;
-  // typedef itk::Image<VectorPixelType, 3> ImageVectorType;
-
   typedef itk::VectorImage<double, 3> ImageVectorType;
   typedef ImageVectorType::PixelType VectorPixelType;
 
@@ -56,22 +52,9 @@ public:
 
   void InitializeUserInfo(py::dict &user_info) override;
 
-  // void calculateDoseWeightedMicrodosimetricFunction(VectorPixelType& microDosSpectra,double izz, double iAA, double ene, double dEdx, double dose,double& LinealEnergy_Dose, double& LinealEnergyS);
-  // void getBinValueAndContent(const VectorPixelType& vec, 
-  //                                         size_t index, 
-  //                                         double& binValue, 
-  //                                         double& binContent)const ;
-
-  // void setBinValueAndContent(VectorPixelType& vec, 
-  //                                         size_t index, 
-  //                                         double binValue, 
-  //                                         double binContent);
   G4double getDose(G4Step *step);
   G4double GetStoppingPower(G4Step *step);
-  // void getAparaion(const double& CelDiam, const double& ene, const int& iAA, const int& izz, double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1);
-  // double sedmean(double x, double depev, int ic1, int ie1, int ip1, double ratioc, double ratioe, double ratiop, double Apara[]);
-  // double sedfunc(double x, double depev, const double Apara[], size_t size);
-  // void loadIonData();
+
   G4bool IsMaster() const;
 
   std::string GetPhysicalVolumeName() const { return fPhysicalVolumeName; }
@@ -95,6 +78,7 @@ public:
   bool GetDoseAveragedLinealEnergyFlag() const { return fdoseAveragedLinealEnergy; }
   void SetDoseAveragedLinealEnergyFlag(const bool b) { fdoseAveragedLinealEnergy = b; }
 
+  void SetDomainRadius(const double radius) { fdomainRadiusInUm = radius/CLHEP::um; }
 
 
   // void EndSimulationAction();
@@ -119,7 +103,7 @@ public:
   int NbOfThreads = 0;
   G4ThreeVector fImageSize;
   G4ThreeVector fImageSpacing;
-  double fDomainRadius;
+  double fdomainRadiusInUm;
   int NbOfEvent = 0;
   double fNucleusRadius;
   double fBetaRef;
@@ -136,21 +120,12 @@ public:
   // Option: indicate we must calculate dose-averaged lineal energy
   bool fdoseAveragedLinealEnergy{};
 
-
-
   G4ThreeVector fTranslation;
 
 private:
-  std::vector<double> yhig, yfy, ydy;
   static constexpr int nybin = 400;
   static constexpr int mparased = 9;
   static constexpr int iunit = 2;
-  // static constexpr int ROWS = 576;
-  // static constexpr int COLS = 9;
-    // Define constants outside the class
-	// const std::vector<double> eincion = {1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 100.0, 300.0, 999.0};
-	// const std::vector<double> cdiamion = {0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0};
-	// const std::vector<int> izion = {1, 2, 6, 10, 14, 26};
 };
 
 
@@ -214,14 +189,14 @@ public:
     MicrodosimetricCalculator(size_t nybin_val, double celDiam, double domainRadius, 
                              double nucleusRadius, double betaRef, int iunit_val, int mparased_val);
 
-    // Public reinitialization function if parameters need to be updated
-    void reinitialize(size_t nybin_val,
-                      double celDiam,
-                      double domainRadius,
-                      double nucleusRadius,
-                      double betaRef,
-                      int iunit_val,
-                      int mparased_val);
+    // // Public reinitialization function if parameters need to be updated
+    // void reinitialize(size_t nybin_val,
+    //                   double celDiam,
+    //                   double domainRadius,
+    //                   double nucleusRadius,
+    //                   double betaRef,
+    //                   int iunit_val,
+    //                   int mparased_val);
 
     void get_Histo_X_Labels(std::vector<double>& labels) const;
 
@@ -230,8 +205,9 @@ public:
         double izz, double iAA, double ene, double dEdx, double dose,
         double& LinealEnergy_Dose, double& LinealEnergyS);
 
+
     // These methods must be implemented/linked by the user
-    void getAparaion(const double& CelDiam, const double& ene, const int& iAA, const int& izz,
+    void getAparaion(const double& CelDiam, const double& energyPerNucleon, const int& iAA, const int& izz,
                      double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1);
 
     inline double sedmean(double x, double depev, int ic1, int ie1, int ip1,

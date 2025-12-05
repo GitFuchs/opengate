@@ -1761,9 +1761,13 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
     "LinealEnergySpectra": (
         True,
         {
-            "doc": "This option enables the LinealEnergySpectra image.",
-        },
-    ),
+            "doc": "This option enables the output of the LinealEnergySpectra.",
+        },),
+    "DomainRadius":(
+        0.3* g4_units.um,
+        {
+            "doc": "The radius of the domain. Please add unit. Default is 0.3 um.",
+        },),
     }
 
     user_output_config = {
@@ -1808,7 +1812,7 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         # if self.uncertainty or self.scatter:
         #     fatal("FluenceActor : uncertainty and scatter not implemented yet")
 
-        self.InitializeUserInfo(self.user_info)
+        # self.InitializeUserInfo(self.user_info)
         # Set the physical volume name on the C++ side
         self.SetPhysicalVolumeName(self.get_physical_volume_name())
         # Set the flags on C++ side so the C++ knows which quantities need to be scored
@@ -1820,6 +1824,8 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         #     self.user_output.LinealEnergySpectra.get_active()
         # )
         self.SetLinealEnergySpectraFlag(self.LinealEnergySpectra)
+        self.SetDomainRadius(self.DomainRadius)
+        print("DomainRadius set to:", self.DomainRadius / g4_units.um, "um")
 
         # LinealEnergySpectra
         self.SetMeanLinealEnergyFlag(
@@ -1828,6 +1834,8 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         self.SetDoseAveragedLinealEnergyFlag(
             self.user_output.DoseAveragedLinealEnergy.get_active()
         )
+        self.InitializeUserInfo(self.user_info)  # C++ side
+
         # print("Initializing Cpp")
         self.InitializeCpp()
 
