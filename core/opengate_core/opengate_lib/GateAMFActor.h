@@ -67,16 +67,19 @@ public:
   void divideVectorImageByScalarImage(const ImageVectorType::Pointer vectorImage,
                                         const Image3DType::Pointer scalarImage);
 
+  void divideImage3DByImage3D(Image3DType::Pointer numeratorImage,
+                                          const Image3DType::Pointer denominatorImage);
+
   void InitializeCpp();
   void SetPhysicalVolumeName(std::string s) { fPhysicalVolumeName = s; }
   void GetVoxelPosition(G4Step *step, G4ThreeVector &position, bool &isInside,
                         Image3DType::IndexType &index) const;
                     
-  bool GetLinealEnergySpectraFlag() const { return flinealEnergySpectra; }
-  void SetLinealEnergySpectraFlag(const bool b) { flinealEnergySpectra = b; }
+  bool GetMicrodosimetricSpectraFlag() const { return fMicrodosimetricSpectra; }
+  void SetMicrodosimetricSpectraFlag(const bool b) { fMicrodosimetricSpectra = b; }
 
-  bool GetMeanLinealEnergyFlag() const { return fmeanLinealEnergy; }
-  void SetMeanLinealEnergyFlag(const bool b) { fmeanLinealEnergy = b; }
+  bool GetDoseAveragedLinealEnergySaturationCorrectedFlag() const { return fdoseAveragedLinealEnergySaturationCorrected; }
+  void SetDoseAveragedLinealEnergySaturationCorrectedFlag(const bool b) { fdoseAveragedLinealEnergySaturationCorrected = b; }
 
   bool GetDoseAveragedLinealEnergyFlag() const { return fdoseAveragedLinealEnergy; }
   void SetDoseAveragedLinealEnergyFlag(const bool b) { fdoseAveragedLinealEnergy = b; }
@@ -94,7 +97,7 @@ public:
   //  The image is accessible on py side (shared by all threads)
   Image3DType::Pointer cpp_amf_dose_image;
   ImageVectorType::Pointer cpp_amf_microdosimetric_spectra;
-  Image3DType::Pointer cpp_amf_mean_lineal_energy;
+  Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy_saturation_corrected;
   Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy;
 
 
@@ -116,11 +119,11 @@ public:
 
   MicrodosimetricCalculator* calculator;
 
-  // Option: indicate we must calculate lineal energy spectra
-  bool flinealEnergySpectra{};
-  // Option: indicate we must calculate mean lineal energy
-  bool fmeanLinealEnergy{};
-  // Option: indicate we must calculate dose-averaged lineal energy
+  // Option: indicate we must calculate microdosimetric energy spectra
+  bool fMicrodosimetricSpectra{};
+  // Option: indicate we must calculate the dose averaged lineal energy with saturation correction
+  bool fdoseAveragedLinealEnergySaturationCorrected{};
+  // Option: indicate we must calculate dose averaged lineal energy
   bool fdoseAveragedLinealEnergy{};
 
   G4ThreeVector fTranslation;
@@ -175,9 +178,9 @@ class MicrodosimetricCalculator {
     double y0{};
 
     // Option: indicate we must calculate lineal energy spectra
-    bool flinealEnergySpectra=true;
+    bool fMicrodosimetricSpectra=true;
     // Option: indicate we must calculate mean lineal energy
-    bool fmeanLinealEnergy=true;
+    bool fdoseAveragedLinealEnergySaturationCorrected=true;
     // Option: indicate we must calculate dose-averaged lineal energy
     bool fdoseAveragedLinealEnergy=true;
 
@@ -206,7 +209,7 @@ public:
     void calculateDoseWeightedMicrodosimetricFunction(
         VectorPixelType& microDosSpectra,
         double izz, double iAA, double ene, double dEdx, double dose,
-        double& LinealEnergy_Dose, double& LinealEnergyS);
+        double& LinealEnergy_Dose, double& LinealEnergy_Dose_saturation_correctedS);
 
 
     // These methods must be implemented/linked by the user
@@ -218,12 +221,12 @@ public:
     inline double sedfunc(double x, double depev, const double Apara[], size_t size);
     void setTSEDfilename(const std::string& filename);
     void loadIonData();
-    void setCalculationFlags(bool linealEnergySpectra, bool meanLinealEnergy, bool doseAveragedLinealEnergy) {
-        flinealEnergySpectra = linealEnergySpectra;
-        fmeanLinealEnergy = meanLinealEnergy;
+    void setCalculationFlags(bool linealEnergySpectra, bool doseAveragedLinealEnergySaturationCorrected, bool doseAveragedLinealEnergy) {
+        fMicrodosimetricSpectra = linealEnergySpectra;
+        fdoseAveragedLinealEnergySaturationCorrected = doseAveragedLinealEnergySaturationCorrected;
         fdoseAveragedLinealEnergy = doseAveragedLinealEnergy;
-        // std::cout << "setCalculationFlags Calculation flags set - linealEnergySpectra: " << flinealEnergySpectra
-        //           << ", meanLinealEnergy: " << fmeanLinealEnergy
+        // std::cout << "setCalculationFlags Calculation flags set - linealEnergySpectra: " << fMicrodosimetricSpectra
+        //           << ", meanLinealEnergy: " << fdoseAveragedLinealEnergySaturationCorrected
         //           << ", doseAveragedLinealEnergy: " << fdoseAveragedLinealEnergy << std::endl;
     } 
 

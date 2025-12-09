@@ -1758,10 +1758,10 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
             {
                 "doc": "File name for the microdosimetric spectra data.",
             },),
-    "LinealEnergySpectra": (
+    "MicrodosimetricSpectra": (
         True,
         {
-            "doc": "This option enables the output of the LinealEnergySpectra.",
+            "doc": "This option enables the output of the MicrodosimetricSpectra.",
         },),
     "DomainRadius":(
         0.3* g4_units.um,
@@ -1774,7 +1774,7 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         "dose": {
             "actor_output_class": ActorOutputSingleImage,
         },
-        "MeanLinealEnergy": {
+        "DoseAveragedLinealEnergySaturationCorrected": {
             "actor_output_class": ActorOutputSingleImage,
             "active": True,
         },
@@ -1782,7 +1782,7 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
             "actor_output_class": ActorOutputSingleImage,
             "active": True,
         },
-        # "LinealEnergySpectra": {
+        # "MicrodosimetricSpectra": {
         #     # "actor_output_class": ActorOutputSingleImage,
         #     "active": True,
         # },
@@ -1817,19 +1817,19 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         self.SetPhysicalVolumeName(self.get_physical_volume_name())
         # Set the flags on C++ side so the C++ knows which quantities need to be scored
         # print("Setting AMFActor scoring options:")
-        # print("Flag LinealEnergySpectra:", self.user_output.LinealEnergySpectra.get_active())
-        # print("Flag MeanLinealEnergy:", self.user_output.MeanLinealEnergy.get_active())
+        # print("Flag MicrodosimetricSpectra:", self.user_output.MicrodosimetricSpectra.get_active())
+        # print("Flag DoseAveragedLinealEnergySaturationCorrected:", self.user_output.DoseAveragedLinealEnergySaturationCorrected.get_active())
         # print("Flag DoseAveragedLinealEnergy:", self.user_output.DoseAveragedLinealEnergy.get_active())
-        # self.SetLinealEnergySpectraFlag(
-        #     self.user_output.LinealEnergySpectra.get_active()
+        # self.SetMicrodosimetricSpectraFlag(
+        #     self.user_output.MicrodosimetricSpectra.get_active()
         # )
-        self.SetLinealEnergySpectraFlag(self.LinealEnergySpectra)
+        self.SetMicrodosimetricSpectraFlag(self.MicrodosimetricSpectra)
         self.SetDomainRadius(self.DomainRadius)
         print("DomainRadius set to:", self.DomainRadius / g4_units.um, "um")
 
-        # LinealEnergySpectra
-        self.SetMeanLinealEnergyFlag(
-            self.user_output.MeanLinealEnergy.get_active()
+        # MicrodosimetricSpectra
+        self.SetDoseAveragedLinealEnergySaturationCorrectedFlag(
+            self.user_output.DoseAveragedLinealEnergySaturationCorrected.get_active()
         )
         self.SetDoseAveragedLinealEnergyFlag(
             self.user_output.DoseAveragedLinealEnergy.get_active()
@@ -1843,13 +1843,13 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         self.prepare_output_for_run("dose", run_index)
         self.push_to_cpp_image("dose", run_index, self.cpp_amf_dose_image)
 
-        if self.LinealEnergySpectra:
-            print("flag LinealEnergySpectra is active")
+        if self.MicrodosimetricSpectra:
+            print("flag MicrodosimetricSpectra is active")
 
-        if self.user_output.MeanLinealEnergy.get_active():
-            print("flag MeanLinealEnergy is active")
-            self.prepare_output_for_run("MeanLinealEnergy", run_index)
-            self.push_to_cpp_image("MeanLinealEnergy", run_index, self.cpp_amf_mean_lineal_energy)
+        if self.user_output.DoseAveragedLinealEnergySaturationCorrected.get_active():
+            print("flag DoseAveragedLinealEnergySaturationCorrected is active")
+            self.prepare_output_for_run("DoseAveragedLinealEnergySaturationCorrected", run_index)
+            self.push_to_cpp_image("DoseAveragedLinealEnergySaturationCorrected", run_index, self.cpp_amf_dose_averaged_lineal_energy_saturation_corrected)
 
         if self.user_output.DoseAveragedLinealEnergy.get_active():
             print("flag DoseAveragedLinealEnergy is active")
@@ -1865,10 +1865,10 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         self._update_output_coordinate_system("dose", run_index)
         # print("Fetched dose image")
 
-        if self.user_output.MeanLinealEnergy.get_active():
-            self.fetch_from_cpp_image("MeanLinealEnergy", run_index, self.cpp_amf_mean_lineal_energy)
-            self._update_output_coordinate_system("MeanLinealEnergy", run_index)
-            # print("Fetched MeanLinealEnergy image")
+        if self.user_output.DoseAveragedLinealEnergySaturationCorrected.get_active():
+            self.fetch_from_cpp_image("DoseAveragedLinealEnergySaturationCorrected", run_index, self.cpp_amf_dose_averaged_lineal_energy_saturation_corrected)
+            self._update_output_coordinate_system("DoseAveragedLinealEnergySaturationCorrected", run_index)
+            # print("Fetched DoseAveragedLinealEnergySaturationCorrected image")
 
         if self.user_output.DoseAveragedLinealEnergy.get_active():
             self.fetch_from_cpp_image("DoseAveragedLinealEnergy", run_index, self.cpp_amf_dose_averaged_lineal_energy)

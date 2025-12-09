@@ -36,18 +36,18 @@ void init_GateAMFActor(py::module &m) {
       .def("EndOfRunActionMasterThread",
            &GateAMFActor::EndOfRunActionMasterThread)
       .def_readwrite("cpp_amf_dose_image", &GateAMFActor::cpp_amf_dose_image)
-      .def_readwrite("cpp_amf_mean_lineal_energy",
-                     &GateAMFActor::cpp_amf_mean_lineal_energy)
+      .def_readwrite("cpp_amf_dose_averaged_lineal_energy_saturation_corrected",
+                     &GateAMFActor::cpp_amf_dose_averaged_lineal_energy_saturation_corrected)
       .def_readwrite("cpp_amf_dose_averaged_lineal_energy",
                      &GateAMFActor::cpp_amf_dose_averaged_lineal_energy)
       // // .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
       .def("GetPhysicalVolumeName", &GateAMFActor::GetPhysicalVolumeName)
       .def("SetPhysicalVolumeName", &GateAMFActor::SetPhysicalVolumeName)
       .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
-      .def("GetLinealEnergySpectraFlag", &GateAMFActor::GetLinealEnergySpectraFlag)
-      .def("SetLinealEnergySpectraFlag", &GateAMFActor::SetLinealEnergySpectraFlag)
-      .def("GetMeanLinealEnergyFlag", &GateAMFActor::GetMeanLinealEnergyFlag)
-      .def("SetMeanLinealEnergyFlag", &GateAMFActor::SetMeanLinealEnergyFlag)
+      .def("GetMicrodosimetricSpectraFlag", &GateAMFActor::GetMicrodosimetricSpectraFlag)
+      .def("SetMicrodosimetricSpectraFlag", &GateAMFActor::SetMicrodosimetricSpectraFlag)
+      .def("GetDoseAveragedLinealEnergySaturationCorrectedFlag", &GateAMFActor::GetDoseAveragedLinealEnergySaturationCorrectedFlag)
+      .def("SetDoseAveragedLinealEnergySaturationCorrectedFlag", &GateAMFActor::SetDoseAveragedLinealEnergySaturationCorrectedFlag)
       .def("GetDoseAveragedLinealEnergyFlag", &GateAMFActor::GetDoseAveragedLinealEnergyFlag)
       .def("SetDoseAveragedLinealEnergyFlag", &GateAMFActor::SetDoseAveragedLinealEnergyFlag)
       .def("SetDomainRadius", &GateAMFActor::SetDomainRadius)
