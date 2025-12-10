@@ -59,19 +59,19 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
   fHitType = DictGetStr(user_info, "hit_type");
 
   fSpectraOutputFileName = DictGetStr(user_info, "microdosimetric_spectra_file_name");
-  std::cout << "fOutputFileName: " << fSpectraOutputFileName << std::endl;
+//   std::cout << "fOutputFileName: " << fSpectraOutputFileName << std::endl;
 
   // translation
   fTranslation = DictGetG4ThreeVector(user_info, "translation");
 
   fImageSpacing = DictGetG4ThreeVector(user_info, "spacing");
   fImageSize = DictGetG4ThreeVector(user_info, "size");
-  std::cout << "fImageSize: " << fImageSize << std::endl;
-  std::cout << "fImageSpacing: " << fImageSpacing << std::endl;  
+//   std::cout << "fImageSize: " << fImageSize << std::endl;
+//   std::cout << "fImageSpacing: " << fImageSpacing << std::endl;  
   fTSEDfilename = DictGetStr(user_info, "tsed_file_name");
-  std::cout << "fTSEDfilename: " << fTSEDfilename << std::endl;
+//   std::cout << "fTSEDfilename: " << fTSEDfilename << std::endl;
 
-  std::cout << "fdomainRadiusInUm: "<< fdomainRadiusInUm <<std::endl;
+//   std::cout << "fdomainRadiusInUm: "<< fdomainRadiusInUm <<std::endl;
 
     double CelDiam = 2.0 * fdomainRadiusInUm; // in um, fDomainRadiusInUm is in um
     double nucleusRadius = 0.8 * fdomainRadiusInUm; // in um
