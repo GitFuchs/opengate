@@ -59,7 +59,7 @@ def simulation(
     sim.random_seed = 123456789
     sim.number_of_threads = number_of_threads
     # Materials
-    sim.volume_manager.add_material_database(data_path / "GateMaterials.db")
+    sim.volume_manager.add_material_database(data_path / "../GateMaterials.db")
 
     # ######################################################################
     # # Defining geometry world plus phantom
