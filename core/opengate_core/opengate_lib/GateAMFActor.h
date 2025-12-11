@@ -100,7 +100,6 @@ public:
   Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy_saturation_corrected;
   Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy;
 
-
   double fVoxelVolume{};
   std::string fPhysicalVolumeName;
   std::string fHitType;
@@ -135,6 +134,13 @@ private:
 };
 
 
+// #################################################################################
+// #################################################################################
+// #################################################################################
+// Dedicated, optimized class for microdosimetric calculations
+// #################################################################################
+// #################################################################################
+// #################################################################################
 class MicrodosimetricCalculator {
   private:
     using ImageVectorType = itk::VectorImage<double, 3>;
@@ -150,26 +156,12 @@ class MicrodosimetricCalculator {
     int mparased{};
     double factor{};
     std::string fTSEDfilename;
-
-
     std::vector<double> yhig, yfy, ydy;
     std::vector<double> ymid, ywid, eventmid, Z;
     std::vector<std::vector<double>> IonData;
+    std::vector<double> histo_x_labels;
 
     double Apara[9];  // Fixed size based on mparased constant
-
-    static constexpr int ROWS = 576;
-    static constexpr int COLS = 9;
-
-    // Constants (class-level)
-    // static const std::array<double, 12> kEinCion;
-    // static const std::array<double, 8>  kCdiamion;
-    // static const std::array<int, 6>     kIzion;
-    const std::vector<double> eincion = {1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 100.0, 300.0, 999.0};
-	  const std::vector<double> cdiamion = {0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0};
-	  const std::vector<int> izion = {1, 2, 6, 10, 14, 26};
-
-    std::vector<double> histo_x_labels;
 
     double ypower{};            // initialized in initialize()
     static constexpr double ystep = 0.02;
@@ -184,25 +176,50 @@ class MicrodosimetricCalculator {
     // Option: indicate we must calculate dose-averaged lineal energy
     bool fdoseAveragedLinealEnergy=true;
 
+    // Constants (class-level)
+    static constexpr int ROWS = 576;
+    static constexpr int COLS = 9;
+    const std::vector<double> eincion = {1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 100.0, 300.0, 999.0};
+	  const std::vector<double> cdiamion = {0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.5, 1.0};
+	  const std::vector<int> izion = {1, 2, 6, 10, 14, 26};
+
+
+
+    struct IonParamCombo {
+          double weight;      // Rp * Re * Rc
+          double A0, A1, A2, A3, A4, A5, A6, A7, A8;
+          double cst1;        // depev / A8  (or 0 if depev == 0)
+          double firstPref;   // 2.0 / pow(cst1 * A2, 2)  when depev != 0
+          double logBase7;    // std::log((A7 - 1.0) / A7) for third term
+      };
+
+
     // Private initialization function
     void initialize();
 
-public:
+    inline int buildIonParamCombos(
+          double depev, int ic1, int ie1, int ip1, double ratioc, double ratioe, double ratiop,
+          IonParamCombo combos[8],          // output
+          double& weightedA8                // output: Σ weight * A8
+      ) const;
+
+    inline double sedmeanFast(double x, bool depevZero, const IonParamCombo* combos, int nCombos) const;
+
+    void getAparaion(const double& CelDiam, const double& energyPerNucleon, const int& iAA, const int& izz,
+                     double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1);
+
+    inline double sedmean(double x, double depev, int ic1, int ie1, int ip1,
+                   double ratioc, double ratioe, double ratiop, double Apara[]);
+    inline double sedfunc(double x, double depev, const double Apara[], size_t size);
+
+    public:
+
     // Pixel type alias exposed (if callers need it)
     using PixelVectorType = VectorPixelType;
 
     // Constructor
     MicrodosimetricCalculator(size_t nybin_val, double celDiam, double domainRadius, 
                              double nucleusRadius, double betaRef, int iunit_val, int mparased_val);
-
-    // // Public reinitialization function if parameters need to be updated
-    // void reinitialize(size_t nybin_val,
-    //                   double celDiam,
-    //                   double domainRadius,
-    //                   double nucleusRadius,
-    //                   double betaRef,
-    //                   int iunit_val,
-    //                   int mparased_val);
 
     void get_Histo_X_Labels(std::vector<double>& labels) const;
 
@@ -211,23 +228,22 @@ public:
         double izz, double iAA, double ene, double dEdx, double dose,
         double& LinealEnergy_Dose, double& LinealEnergy_Dose_saturation_correctedS);
 
+    void calculateDoseWeightedMicrodosimetricFunctionFast(
+        VectorPixelType& microDosSpectra,
+        double izz,
+        double iAA,
+        double energyPerNucleon,
+        double dEdx,
+        double dose,
+        double& LinealEnergy_Dose,
+        double& LinealEnergy_Dose_saturation_correctedS);
 
-    // These methods must be implemented/linked by the user
-    void getAparaion(const double& CelDiam, const double& energyPerNucleon, const int& iAA, const int& izz,
-                     double& ratioc, double& ratioe, double& ratiop, int& ic1, int& ie1, int& ip1);
-
-    inline double sedmean(double x, double depev, int ic1, int ie1, int ip1,
-                   double ratioc, double ratioe, double ratiop, double Apara[]);
-    inline double sedfunc(double x, double depev, const double Apara[], size_t size);
     void setTSEDfilename(const std::string& filename);
     void loadIonData();
     void setCalculationFlags(bool linealEnergySpectra, bool doseAveragedLinealEnergySaturationCorrected, bool doseAveragedLinealEnergy) {
         fMicrodosimetricSpectra = linealEnergySpectra;
         fdoseAveragedLinealEnergySaturationCorrected = doseAveragedLinealEnergySaturationCorrected;
         fdoseAveragedLinealEnergy = doseAveragedLinealEnergy;
-        // std::cout << "setCalculationFlags Calculation flags set - linealEnergySpectra: " << fMicrodosimetricSpectra
-        //           << ", meanLinealEnergy: " << fdoseAveragedLinealEnergySaturationCorrected
-        //           << ", doseAveragedLinealEnergy: " << fdoseAveragedLinealEnergy << std::endl;
     } 
 
 
