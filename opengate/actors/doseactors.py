@@ -1768,6 +1768,16 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         {
             "doc": "The radius of the domain. Please add unit. Default is 0.3 um.",
         },),
+    "BetaRef":(
+        0.0615* 1/(g4_units.Gy*g4_units.Gy),
+        {
+            "doc": "The beta value of the cell line for reference irradiation. Please add unit. Default is 0.0615 1/(Gy^2).",
+        },),
+    "NucleusRadius":(
+        4.5* g4_units.um,
+        {
+            "doc": "The radius of the nucleus. Please add unit. Default is 4.5 um.",
+        },),   
     }
 
     user_output_config = {
@@ -1821,6 +1831,8 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         # )
         self.SetMicrodosimetricSpectraFlag(self.MicrodosimetricSpectra)
         self.SetDomainRadius(self.DomainRadius)
+        self.SetBetaRef(self.BetaRef)
+        self.SetNucleusRadius(self.NucleusRadius)
 
         # MicrodosimetricSpectra
         self.SetDoseAveragedLinealEnergySaturationCorrectedFlag(

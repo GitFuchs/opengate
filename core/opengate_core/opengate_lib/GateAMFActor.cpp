@@ -64,14 +64,15 @@ void GateAMFActor::InitializeUserInfo(py::dict &user_info) {
   fTSEDfilename = DictGetStr(user_info, "tsed_file_name");
 
     double CelDiam = 2.0 * fdomainRadiusInUm; // in um, fDomainRadiusInUm is in um
-    double nucleusRadius = 0.8 * fdomainRadiusInUm; // in um
-    double betaRef = 0.5 * fdomainRadiusInUm; // in um
+    // double nucleusRadius = 0.8 * fdomainRadiusInUm; // in um
+    // double betaRef = 0.5 * fdomainRadiusInUm; // in um
+
 
     calculator = new MicrodosimetricCalculator(nybin,
                               CelDiam,
                               fdomainRadiusInUm,
-                              nucleusRadius,
-                              betaRef, iunit, mparased);
+                              fNucleusRadiusInUm,
+                              fBetaRefinGyminus2, iunit, mparased);
     calculator->setTSEDfilename(fTSEDfilename);
 }
 
@@ -644,7 +645,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunctionFast
         sum2   += y_sed * ywid_val * ymid_val;    // ∫ y^2 f(y) dy
         sumYdy += ydy_val;                        // Σ ydy (for normalization)
 
-        if (fdoseAveragedLinealEnergy) {
+        if (fdoseAveragedLinealEnergySaturationCorrected) {
             zNumerator   += y_sed * Z[i];
             zDenominator += y_sed;
         }
@@ -661,9 +662,8 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunctionFast
         ydy[i] *= normalization_factor;
         microDosSpectra[i] = ydy[i] * dose;
     }
-
     // yD calculation
-    if (fdoseAveragedLinealEnergySaturationCorrected) {
+    if (fdoseAveragedLinealEnergy) {
         if (sum1 == 0.0) {
             std::cout << "Warning: sum1 is zero, returning zero vector." << std::endl;
             LinealEnergy_Dose = 0.0;
@@ -673,7 +673,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunctionFast
     }
 
     // yS calculation (saturation-corrected)
-    if (fdoseAveragedLinealEnergy && zDenominator > 0.0) {
+    if (fdoseAveragedLinealEnergySaturationCorrected && zDenominator > 0.0) {
         const double LinealEnergy_Freq = sum1 / sum0;
         LinealEnergy_Dose_saturation_correctedS =
             ((zNumerator / zDenominator) / LinealEnergy_Freq) * (y0 * y0) * dose;
@@ -759,7 +759,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
         sum1 += yfy[i] * ywid[i];
         sum2 += yfy[i] * ywid[i] * ymid[i];
         sumYdy += ydy[i];   // for normalization
-        if (fdoseAveragedLinealEnergy) {
+        if (fdoseAveragedLinealEnergySaturationCorrected) {
             zNumerator   += yfy[i] * Z[i];
             zDenominator += yfy[i];
         }
@@ -773,7 +773,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
     }
 
     // yD calculation
-    if (fdoseAveragedLinealEnergySaturationCorrected){
+    if (fdoseAveragedLinealEnergy){
         if (sum1 == 0) {
             std::cout << "Warning: sum1 is zero, returning zero vector." << std::endl;
             LinealEnergy_Dose = 0.0;
@@ -783,7 +783,7 @@ void MicrodosimetricCalculator::calculateDoseWeightedMicrodosimetricFunction(Vec
         LinealEnergy_Dose *= dose;
     }
     // yS calculation
-    if (fdoseAveragedLinealEnergy && zDenominator > 0.0) {
+    if (fdoseAveragedLinealEnergySaturationCorrected && zDenominator > 0.0) {
         double LinealEnergy_Freq = sum1 / sum0;
         LinealEnergy_Dose_saturation_correctedS = ((zNumerator / zDenominator) / LinealEnergy_Freq) * (y0 * y0);
         LinealEnergy_Dose_saturation_correctedS *= dose;

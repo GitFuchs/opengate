@@ -51,6 +51,8 @@ void init_GateAMFActor(py::module &m) {
       .def("GetDoseAveragedLinealEnergyFlag", &GateAMFActor::GetDoseAveragedLinealEnergyFlag)
       .def("SetDoseAveragedLinealEnergyFlag", &GateAMFActor::SetDoseAveragedLinealEnergyFlag)
       .def("SetDomainRadius", &GateAMFActor::SetDomainRadius)
+      .def("SetBetaRef", &GateAMFActor::SetBetaRef)
+      .def("SetNucleusRadius", &GateAMFActor::SetNucleusRadius)
        .def_readwrite("fPhysicalVolumeName",
        &GateAMFActor::fPhysicalVolumeName);
 }

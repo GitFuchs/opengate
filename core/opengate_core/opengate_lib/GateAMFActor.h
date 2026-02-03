@@ -85,6 +85,9 @@ public:
   void SetDoseAveragedLinealEnergyFlag(const bool b) { fdoseAveragedLinealEnergy = b; }
 
   void SetDomainRadius(const double radius) { fdomainRadiusInUm = radius/CLHEP::um; }
+  void SetBetaRef(const double betaRef) { fBetaRefinGyminus2 = betaRef*(CLHEP::gray*CLHEP::gray); }
+  void SetNucleusRadius(const double nucleusRadius) { fNucleusRadiusInUm = nucleusRadius/CLHEP::um; }
+
 
 
   // void EndSimulationAction();
@@ -109,6 +112,8 @@ public:
   G4ThreeVector fImageSize;
   G4ThreeVector fImageSpacing;
   double fdomainRadiusInUm;
+  double fBetaRefinGyminus2;
+  double fNucleusRadiusInUm;
   int NbOfEvent = 0;
   // double fNucleusRadius;
   // double fBetaRef;
