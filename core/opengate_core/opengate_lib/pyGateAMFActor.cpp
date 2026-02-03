@@ -40,7 +40,9 @@ void init_GateAMFActor(py::module &m) {
                      &GateAMFActor::cpp_amf_dose_averaged_lineal_energy_saturation_corrected)
       .def_readwrite("cpp_amf_dose_averaged_lineal_energy",
                      &GateAMFActor::cpp_amf_dose_averaged_lineal_energy)
-      // // .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
+      .def_readwrite("cpp_amf_alpha_mcfmkm_image", &GateAMFActor::cpp_amf_alpha_mcfmkm_image)
+      .def_readwrite("cpp_amf_beta_mcfmkm_image", &GateAMFActor::cpp_amf_beta_mcfmkm_image)
+                     // // .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
       .def("GetPhysicalVolumeName", &GateAMFActor::GetPhysicalVolumeName)
       .def("SetPhysicalVolumeName", &GateAMFActor::SetPhysicalVolumeName)
       .def_readwrite("NbOfEvent", &GateAMFActor::NbOfEvent)
@@ -50,8 +52,12 @@ void init_GateAMFActor(py::module &m) {
       .def("SetDoseAveragedLinealEnergySaturationCorrectedFlag", &GateAMFActor::SetDoseAveragedLinealEnergySaturationCorrectedFlag)
       .def("GetDoseAveragedLinealEnergyFlag", &GateAMFActor::GetDoseAveragedLinealEnergyFlag)
       .def("SetDoseAveragedLinealEnergyFlag", &GateAMFActor::SetDoseAveragedLinealEnergyFlag)
+      .def("SetAlphaMCFMKMFlag", &GateAMFActor::SetAlphaMCFMKMFlag)
+      .def("SetBetaMCFMKMFlag", &GateAMFActor::SetBetaMCFMKMFlag)
       .def("SetDomainRadius", &GateAMFActor::SetDomainRadius)
       .def("SetBetaRef", &GateAMFActor::SetBetaRef)
+      .def("SetAlphaRef", &GateAMFActor::SetAlphaRef)
+      .def("SetAlphaNot", &GateAMFActor::SetAlphaNot)
       .def("SetNucleusRadius", &GateAMFActor::SetNucleusRadius)
        .def_readwrite("fPhysicalVolumeName",
        &GateAMFActor::fPhysicalVolumeName);

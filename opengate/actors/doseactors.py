@@ -1768,11 +1768,21 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         {
             "doc": "The radius of the domain. Please add unit. Default is 0.3 um.",
         },),
+    "AlphaRef":(
+        0.217* 1/(g4_units.Gy),
+        {
+            "doc": "The alpha value of the cell line for reference irradiation. Please add unit. Default is 0.5 1/(Gy.",
+        },),   
     "BetaRef":(
         0.0615* 1/(g4_units.Gy*g4_units.Gy),
         {
             "doc": "The beta value of the cell line for reference irradiation. Please add unit. Default is 0.0615 1/(Gy^2).",
         },),
+    "AlphaNot":(
+        0.117* 1/(g4_units.Gy),
+        {
+            "doc": "The alpha not value of the cell line for reference irradiation. Please add unit. Default is 0.5 1/(Gy.",
+        },), 
     "NucleusRadius":(
         4.5* g4_units.um,
         {
@@ -1783,12 +1793,22 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
     user_output_config = {
         "dose": {
             "actor_output_class": ActorOutputSingleImage,
+            "write_to_disk": False,
+            "active": True,
         },
         "DoseAveragedLinealEnergySaturationCorrected": {
             "actor_output_class": ActorOutputSingleImage,
-            "active": True,
+            "active": False,
         },
         "DoseAveragedLinealEnergy": {
+            "actor_output_class": ActorOutputSingleImage,
+            "active": False,
+        },
+        "Alpha_MCFMKM": {
+            "actor_output_class": ActorOutputSingleImage,
+            "active": True,
+        },
+        "Beta_MCFMKM": {
             "actor_output_class": ActorOutputSingleImage,
             "active": True,
         },
@@ -1832,7 +1852,10 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         self.SetMicrodosimetricSpectraFlag(self.MicrodosimetricSpectra)
         self.SetDomainRadius(self.DomainRadius)
         self.SetBetaRef(self.BetaRef)
+        self.SetAlphaRef(self.AlphaRef)
+        self.SetAlphaNot(self.AlphaNot)
         self.SetNucleusRadius(self.NucleusRadius)
+
 
         # MicrodosimetricSpectra
         self.SetDoseAveragedLinealEnergySaturationCorrectedFlag(
@@ -1840,6 +1863,13 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
         )
         self.SetDoseAveragedLinealEnergyFlag(
             self.user_output.DoseAveragedLinealEnergy.get_active()
+        )
+        #Alpha and Beta MCFMKM
+        self.SetAlphaMCFMKMFlag(
+            self.user_output.Alpha_MCFMKM.get_active()
+        )
+        self.SetBetaMCFMKMFlag(
+            self.user_output.Beta_MCFMKM.get_active()
         )
         self.InitializeUserInfo(self.user_info)  # C++ side
 
@@ -1863,6 +1893,14 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
             self.prepare_output_for_run("DoseAveragedLinealEnergy", run_index)
             self.push_to_cpp_image("DoseAveragedLinealEnergy", run_index, self.cpp_amf_dose_averaged_lineal_energy)
 
+        if self.user_output.Alpha_MCFMKM.get_active():
+            self.prepare_output_for_run("Alpha_MCFMKM", run_index)
+            self.push_to_cpp_image("Alpha_MCFMKM", run_index, self.cpp_amf_alpha_mcfmkm_image)
+        if self.user_output.Beta_MCFMKM.get_active():
+            self.prepare_output_for_run("Beta_MCFMKM", run_index)
+            self.push_to_cpp_image("Beta_MCFMKM", run_index, self.cpp_amf_beta_mcfmkm_image)
+
+
         g4.GateAMFActor.BeginOfRunActionMasterThread(self, run_index)
 
 
@@ -1881,6 +1919,15 @@ class AMFActor(VoxelDepositActor, g4.GateAMFActor):
             self.fetch_from_cpp_image("DoseAveragedLinealEnergy", run_index, self.cpp_amf_dose_averaged_lineal_energy)
             self._update_output_coordinate_system("DoseAveragedLinealEnergy", run_index)
             # print("Fetched DoseAveragedLinealEnergy image")
+
+        if self.user_output.Alpha_MCFMKM.get_active():
+            self.fetch_from_cpp_image("Alpha_MCFMKM", run_index, self.cpp_amf_alpha_mcfmkm_image)
+            self._update_output_coordinate_system("Alpha_MCFMKM", run_index)
+            print("Fetched Alpha_MCFMKM image")
+        if self.user_output.Beta_MCFMKM.get_active():
+            self.fetch_from_cpp_image("Beta_MCFMKM", run_index, self.cpp_amf_beta_mcfmkm_image)
+            self._update_output_coordinate_system("Beta_MCFMKM", run_index)
+            print("Fetched Beta_MCFMKM image")
 
         self.user_output.dose.store_meta_data(
             run_index, number_of_samples=self.NbOfEvent

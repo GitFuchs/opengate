@@ -133,6 +133,16 @@ void GateAMFActor::InitializeCpp() {
             // Create the image pointers
             cpp_amf_dose_averaged_lineal_energy = Image3DType::New();
         }
+  if (fAlphaMCFMKMFlag)
+        {
+            // Create the image pointers
+            cpp_amf_alpha_mcfmkm_image = Image3DType::New();
+        }
+  if (fBetaMCFMKMFlag)
+        {
+            // Create the image pointers
+            cpp_amf_beta_mcfmkm_image = Image3DType::New();
+        }
   // Create the image pointers
   // (the size and allocation will be performed on the py side)
     cpp_amf_dose_image = Image3DType::New();
@@ -247,6 +257,10 @@ void GateAMFActor::SteppingAction(G4Step *step) {
   Image3DType::IndexType index;
   GetVoxelPosition(step, position, isInside, index);
 
+  double Alpha=0.;
+  double Beta=0.;
+
+
     // If the position is not inside the image, return
   if (!isInside)
     return;
@@ -271,11 +285,72 @@ void GateAMFActor::SteppingAction(G4Step *step) {
             LinealEnergy_Dose = 0.0;
             LinealEnergy_Dose_saturation_correctedS = 0.0;
 
-            if (fMicrodosimetricSpectra || fdoseAveragedLinealEnergy || fdoseAveragedLinealEnergySaturationCorrected){ 
+            if (fMicrodosimetricSpectra || fdoseAveragedLinealEnergy || fdoseAveragedLinealEnergySaturationCorrected || fAlphaMCFMKMFlag || fBetaMCFMKMFlag){ 
                 // calculator->calculateDoseWeightedMicrodosimetricFunction(microdosimetricSpectra, izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergy_Dose_saturation_correctedS);
             
                 calculator->calculateDoseWeightedMicrodosimetricFunctionFast(microdosimetricSpectra, izz, iAA, energyPerNucleon, dEdx, dose, LinealEnergy_Dose, LinealEnergy_Dose_saturation_correctedS);
 
+                // MCFM-KM parameters calculate alpha and beta
+                if (fAlphaMCFMKMFlag || fBetaMCFMKMFlag){
+                                // Initialize variables for integration
+                    double finalAlpha = 0.0;
+                    double sum_ydy = 0.0;
+                    double Beta_C = 0.0;
+
+                    std::vector<double> y_vector;
+                    G4double density = step->GetPreStepPoint()->GetMaterial()->GetDensity()/ (g/cm3); // in g/cm3;
+                    double piRhoRdSquared = CLHEP::pi * density * fdomainRadiusInUm * fdomainRadiusInUm;
+                    double piRhoRnSquared = CLHEP::pi * density * fNucleusRadiusInUm * fNucleusRadiusInUm;
+
+                    calculator->get_Histo_X_Labels(y_vector);
+                    // std::cout << "LinealEnergy_Dose_saturation_correctedS: " << LinealEnergy_Dose_saturation_correctedS << std::endl;
+                    // Loop over the microdosimetric spectrum to perform the integration
+                    for (size_t i = 0; i < microdosimetricSpectra.Size(); i++) {
+                        double y = y_vector[i]; //y mid value
+                        double ydy = microdosimetricSpectra[i]; // yd(y) value
+
+                        // First term: (alpha_0 + beta_ref * y / (rho * pi * r_d^2))
+                        double firstTerm = fAlphaNotinGyminus1 + fBetaRefinGyminus2 * 0.16022 * y / piRhoRdSquared;
+
+                        // Exponent: - (firstTerm * y / (rho * pi * r_n^2) + beta_ref * (y / (rho * pi * r_n^2))^2)
+                        double exponent = -(firstTerm * y * 0.16022/ piRhoRnSquared) - fBetaRefinGyminus2 * std::pow(y * 0.16022 / piRhoRnSquared, 2);
+
+                        // Denominator: (firstTerm * y / (rho * pi * r_n^2) + beta_ref * (y / (rho * pi * r_n^2))^2)
+                        double denominator = (firstTerm * y *0.16022 / piRhoRnSquared) + (fBetaRefinGyminus2 * std::pow(y * 0.16022 / piRhoRnSquared, 2));
+
+                        // Avoid division by zero or invalid values in the denominator
+                        if (denominator == 0.0) {
+                            continue;  // Skip this iteration
+                        }
+
+                        // Calculate alpha(y)
+                        double alpha_y = firstTerm * (1.0 - std::exp(exponent)) / denominator;
+
+                        double c_y = (1.0 - std::exp(exponent)) / denominator;
+                        
+
+                        // Sum the integral of alpha(y) * d(y) over y
+                        finalAlpha += alpha_y * ydy;
+                        // Sum the integral of c(y) * d(y) over y
+                        Beta_C += c_y * ydy;
+                        sum_ydy += ydy;
+                        // std::cout << "y: " << y << " ydy: " << ydy << " alpha_y: " << alpha_y << " c_y: " << c_y << std::endl;
+                        // std::cout<<"firstTerm: "<< firstTerm << " exponent: " << exponent << " denominator: " << denominator <<std::endl;
+                        // std::cout<<"fAlphaNotinGyminus1: "<< fAlphaNotinGyminus1 << " fBetaRefinGyminus2: " << fBetaRefinGyminus2 << std::endl;
+                        // std::cout << "piRhoRdSquared: " << piRhoRdSquared << " piRhoRnSquared: " << piRhoRnSquared << std::endl;
+
+                    }
+                // Alpha
+                Alpha = finalAlpha / sum_ydy;
+                double finalBeta_C = Beta_C / sum_ydy;
+            
+                // Beta
+                double finalBeta = finalBeta_C * finalBeta_C * fBetaRefinGyminus2;
+                Beta =  std::sqrt(finalBeta) * dose;
+                Alpha = Alpha * dose;
+                // std::cout << "EventID: " << event_id << " Alpha: " << Alpha << " Beta: " << Beta << std::endl;
+                // std::cout << "Dose: " << dose << " finalBeta_C: " << finalBeta_C << " finalAlpha: " << finalAlpha << std::endl;
+                }
             }
 
             {
@@ -289,6 +364,12 @@ void GateAMFActor::SteppingAction(G4Step *step) {
                 }
                 if (fdoseAveragedLinealEnergySaturationCorrected){
                     ImageAddValue<Image3DType>(cpp_amf_dose_averaged_lineal_energy_saturation_corrected, index, LinealEnergy_Dose_saturation_correctedS);
+                }
+                if (fAlphaMCFMKMFlag){
+                    ImageAddValue<Image3DType>(cpp_amf_alpha_mcfmkm_image, index, Alpha);
+                }
+                if (fBetaMCFMKMFlag){
+                    ImageAddValue<Image3DType>(cpp_amf_beta_mcfmkm_image, index, Beta);
                 }
                 ImageAddValue<Image3DType>(cpp_amf_dose_image, index, dose);
 
@@ -326,6 +407,9 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
 
                 //divide cpp_amf_dose_averaged_lineal_energy by cpp_amf_dose_image
                 divideImage3DByImage3D(cpp_amf_dose_averaged_lineal_energy, cpp_amf_dose_image);
+
+                divideImage3DByImage3D(cpp_amf_alpha_mcfmkm_image, cpp_amf_dose_image);
+                divideImage3DByImage3D(cpp_amf_beta_mcfmkm_image, cpp_amf_dose_image);
 
                 writeVectorImage(cpp_amf_microdosimetric_spectra, fSpectraOutputFileName);
 

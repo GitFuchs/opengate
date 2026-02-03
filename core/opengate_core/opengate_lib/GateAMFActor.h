@@ -88,6 +88,10 @@ public:
   void SetBetaRef(const double betaRef) { fBetaRefinGyminus2 = betaRef*(CLHEP::gray*CLHEP::gray); }
   void SetNucleusRadius(const double nucleusRadius) { fNucleusRadiusInUm = nucleusRadius/CLHEP::um; }
 
+  void SetAlphaMCFMKMFlag(const bool b) {fAlphaMCFMKMFlag = b; }
+  void SetBetaMCFMKMFlag(const bool b) { fBetaMCFMKMFlag = b; }
+  void SetAlphaRef(const double alphaRef) { fAlphaRefinGyminus1 = alphaRef*(CLHEP::gray); }
+  void SetAlphaNot(const double alphaNot) { fAlphaNotinGyminus1 = alphaNot*(CLHEP::gray); }
 
 
   // void EndSimulationAction();
@@ -102,7 +106,8 @@ public:
   ImageVectorType::Pointer cpp_amf_microdosimetric_spectra;
   Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy_saturation_corrected;
   Image3DType::Pointer cpp_amf_dose_averaged_lineal_energy;
-
+  Image3DType::Pointer cpp_amf_alpha_mcfmkm_image;
+  Image3DType::Pointer cpp_amf_beta_mcfmkm_image;
   double fVoxelVolume{};
   std::string fPhysicalVolumeName;
   std::string fHitType;
@@ -114,6 +119,10 @@ public:
   double fdomainRadiusInUm;
   double fBetaRefinGyminus2;
   double fNucleusRadiusInUm;
+  double fAlphaRefinGyminus1;
+  double fAlphaNotinGyminus1;
+  bool fAlphaMCFMKMFlag = false;
+  bool fBetaMCFMKMFlag = false;
   int NbOfEvent = 0;
   // double fNucleusRadius;
   // double fBetaRef;
