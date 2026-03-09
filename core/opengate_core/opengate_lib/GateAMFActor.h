@@ -69,6 +69,8 @@ public:
 
   void divideImage3DByImage3D(Image3DType::Pointer numeratorImage,
                                           const Image3DType::Pointer denominatorImage);
+  void squareImage(const Image3DType::Pointer Image);
+
 
   void InitializeCpp();
   void SetPhysicalVolumeName(std::string s) { fPhysicalVolumeName = s; }

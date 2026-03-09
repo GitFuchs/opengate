@@ -341,13 +341,13 @@ void GateAMFActor::SteppingAction(G4Step *step) {
 
                     }
                 // Alpha
-                Alpha = finalAlpha / sum_ydy;
-                double finalBeta_C = Beta_C / sum_ydy;
+                Alpha = finalAlpha * dose / sum_ydy;
             
                 // Beta
+                double finalBeta_C = Beta_C / sum_ydy;
                 double finalBeta = finalBeta_C * finalBeta_C * fBetaRefinGyminus2;
                 Beta =  std::sqrt(finalBeta) * dose;
-                Alpha = Alpha * dose;
+
                 // std::cout << "EventID: " << event_id << " Alpha: " << Alpha << " Beta: " << Beta << std::endl;
                 // std::cout << "Dose: " << dose << " finalBeta_C: " << finalBeta_C << " finalAlpha: " << finalAlpha << std::endl;
                 }
@@ -410,6 +410,8 @@ void GateAMFActor::EndOfRunAction(const G4Run *run)
 
                 divideImage3DByImage3D(cpp_amf_alpha_mcfmkm_image, cpp_amf_dose_image);
                 divideImage3DByImage3D(cpp_amf_beta_mcfmkm_image, cpp_amf_dose_image);
+                squareImage(cpp_amf_beta_mcfmkm_image);
+
 
                 writeVectorImage(cpp_amf_microdosimetric_spectra, fSpectraOutputFileName);
 
@@ -478,6 +480,17 @@ void GateAMFActor::divideVectorImageByScalarImage(const ImageVectorType::Pointer
             vecIt.Set(vecPixel);
         }
     }
+}
+
+void GateAMFActor::squareImage(const Image3DType::Pointer Image)
+{
+    itk::ImageRegionIterator<Image3DType> imageIt(Image, Image->GetRequestedRegion());
+
+    for (imageIt.GoToBegin(); !imageIt.IsAtEnd(); ++imageIt)
+    {
+        imageIt.Set(imageIt.Get()*imageIt.Get());
+    }
+
 }
 
 void GateAMFActor::writeVectorImage(const ImageVectorType::Pointer image,
